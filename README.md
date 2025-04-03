@@ -1,0 +1,1 @@
+# Labyrinth 2025 Database Schema
