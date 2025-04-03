@@ -12,3 +12,69 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model UserProfile {
+  id     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String
+  email  String      @unique
+  //
+  member TeamMember?
+
+  @@map("userprofile")
+}
+
+model Team {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String                @unique @db.VarChar(6)
+  name            String
+  //
+  members         TeamMember[]
+  levelAssignment TeamLevelAssignment[]
+
+  @@map("team")
+}
+
+model TeamMember {
+  teamId  String      @map("team_id") @db.Uuid
+  userId  String      @unique @map("user_id") @db.Uuid
+  isReady Boolean     @default(false) @map("is_ready")
+  //
+  team    Team        @relation(fields: [teamId], references: [id])
+  user    UserProfile @relation(fields: [userId], references: [id])
+
+  @@id([teamId, userId])
+  @@map("teammember")
+}
+
+model Level {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String?
+  targetScore    Int                   @map("target_score")
+  //
+  teamAssignment TeamLevelAssignment[]
+
+  @@map("level")
+}
+
+model TeamLevelAssignment {
+  teamId       String  @map("team_id") @db.Uuid
+  levelId      String  @map("level_id") @db.Uuid
+  sequence     Int
+  currentScore Int     @default(0) @map("current_score")
+  isFinished   Boolean @default(false) @map("is_finished")
+  //
+  team         Team    @relation(fields: [teamId], references: [id])
+  level        Level   @relation(fields: [levelId], references: [id])
+
+  @@id([teamId, levelId])
+  @@map("teamlevelassignment")
+}
+
+model Location {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  latitude  Float  @db.DoublePrecision
+  longitude Float  @db.DoublePrecision
+
+  @@map("location")
+}
