@@ -72,9 +72,43 @@ model TeamLevelAssignment {
 }
 
 model Location {
-  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  latitude  Float  @db.DoublePrecision
-  longitude Float  @db.DoublePrecision
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  latitude  Float     @db.DoublePrecision
+  longitude Float     @db.DoublePrecision
+  // 
+  Pattern   Pattern[]
 
   @@map("location")
+}
+
+model Spell {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @map("spell_id") @db.Uuid
+  score     Int
+  numPoints Int            @map("num_points")
+  // 
+  pattern   SpellPattern[]
+
+  @@map("spell")
+}
+
+model Pattern {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numPoints  Int            @map("num_points")
+  locationid String         @map("location_id") @db.Uuid
+  // 
+  location   Location       @relation(fields: [locationid], references: [id])
+  spell      SpellPattern[]
+
+  @@map("pattern")
+}
+
+model SpellPattern {
+  spellId   String  @map("spell_id") @db.Uuid
+  patternId String  @map("pattern_id") @db.Uuid
+  // 
+  spell     Spell   @relation(fields: [spellId], references: [id])
+  pattern   Pattern @relation(fields: [patternId], references: [id])
+
+  @@id([spellId, patternId])
+  @@map("spellpattern")
 }
