@@ -13,6 +13,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model GameConfig {
+  property String @id
+  value    String
+
+  @@map("gameconfig")
+}
+
 model UserProfile {
   id     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name   String
@@ -24,8 +31,7 @@ model UserProfile {
 }
 
 model Team {
-  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code            String                @unique @db.VarChar(6)
+  id              String                @id @unique @db.VarChar(6)
   name            String
   //
   members         TeamMember[]
@@ -39,8 +45,8 @@ model TeamMember {
   userId  String      @unique @map("user_id") @db.Uuid
   isReady Boolean     @default(false) @map("is_ready")
   //
-  team    Team        @relation(fields: [teamId], references: [id])
-  user    UserProfile @relation(fields: [userId], references: [id])
+  team    Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user    UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([teamId, userId])
   @@map("teammember")
@@ -64,51 +70,53 @@ model TeamLevelAssignment {
   currentScore Int     @default(0) @map("current_score")
   isFinished   Boolean @default(false) @map("is_finished")
   //
-  team         Team    @relation(fields: [teamId], references: [id])
+  team         Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   level        Level   @relation(fields: [levelId], references: [id])
 
   @@id([teamId, levelId])
+  @@unique([teamId, sequence])
   @@map("teamlevelassignment")
 }
 
-model Location {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  latitude  Float     @db.DoublePrecision
-  longitude Float     @db.DoublePrecision
-  // 
-  Pattern   Pattern[]
-
-  @@map("location")
-}
-
 model Spell {
-  id        String         @id @default(dbgenerated("gen_random_uuid()")) @map("spell_id") @db.Uuid
-  score     Int
-  numPoints Int            @map("num_points")
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @map("spell_id") @db.Uuid
+  rewardScore Int       @map("reward_score")
+  numPoints   Int       @map("num_points")
+  cooldown    Int
   // 
-  pattern   SpellPattern[]
+  pattern     Pattern[]
 
   @@map("spell")
 }
 
 model Pattern {
-  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  numPoints  Int            @map("num_points")
-  locationid String         @map("location_id") @db.Uuid
+  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numPoints Int                         @map("num_points")
+  spellId   String                      @db.Uuid
   // 
-  location   Location       @relation(fields: [locationid], references: [id])
-  spell      SpellPattern[]
+  spell     Spell                       @relation(fields: [spellId], references: [id])
+  locations PatternLocationAssignment[]
 
   @@map("pattern")
 }
 
-model SpellPattern {
-  spellId   String  @map("spell_id") @db.Uuid
-  patternId String  @map("pattern_id") @db.Uuid
-  // 
-  spell     Spell   @relation(fields: [spellId], references: [id])
-  pattern   Pattern @relation(fields: [patternId], references: [id])
+model Location {
+  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  latitude  Float                       @db.DoublePrecision
+  longitude Float                       @db.DoublePrecision
+  //
+  patterns  PatternLocationAssignment[]
 
-  @@id([spellId, patternId])
-  @@map("spellpattern")
+  @@map("location")
+}
+
+model PatternLocationAssignment {
+  patternId  String   @db.Uuid
+  locationId String   @db.Uuid
+  //
+  pattern    Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([patternId, locationId])
+  @@map("patternlocationassignment")
 }

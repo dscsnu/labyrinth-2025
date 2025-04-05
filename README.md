@@ -6,3 +6,6 @@
 3. Every attribute that can be mapped must be mapped to snake_case
 4. All @relations must be defined after all attributes, a // must separate attributes and relations
 5. `npx prisma format` must be run before every commit
+
+# Notes
+1. Location \<m-----n> Pattern \<m-----1> Spell
