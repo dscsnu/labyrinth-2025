@@ -34,3 +34,23 @@ Used to run some function when something is clicked outside the given element.
     {/if}
 </main>
 ```
+
+### Modal
+```svelte
+<script lang="ts">
+    import Modal from "$lib/components/Modal.svelte";
+    let isOpen: boolean = $state(false);
+    const toggleModal = () => isOpen = !isOpen;
+</script>
+
+<main class={`h-screen w-screen flex flex-col justify-center items-center`}>
+    <button onclick={() => toggleModal()}>
+        toggle Modal
+    </button>
+
+    <!-- anything passed in class with override default styles -->
+    <Modal bind:isOpen class={`bg-red-500`}>
+        Hello Cro
+    </Modal>
+</main>
+```
