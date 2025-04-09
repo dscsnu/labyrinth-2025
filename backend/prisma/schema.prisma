@@ -1,16 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("PRISMA_DATABASE_URL")
 }
 
 model GameConfig {
@@ -21,11 +15,12 @@ model GameConfig {
 }
 
 model UserProfile {
-  id     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name   String
-  email  String      @unique
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String      @unique
+  createdAt DateTime    @default(dbgenerated("now()")) @map("created_at")
   //
-  member TeamMember?
+  member    TeamMember?
 
   @@map("userprofile")
 }
@@ -36,12 +31,14 @@ model Team {
   //
   members         TeamMember[]
   levelAssignment TeamLevelAssignment[]
+  spellAssignment TeamSpellAssignment[]
+  spellAttempts   TeamSpellAttempt[]
 
   @@map("team")
 }
 
 model TeamMember {
-  teamId  String      @map("team_id") @db.Uuid
+  teamId  String      @map("team_id") @db.VarChar(6)
   userId  String      @unique @map("user_id") @db.Uuid
   isReady Boolean     @default(false) @map("is_ready")
   //
@@ -56,6 +53,7 @@ model Level {
   id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String
   description    String?
+  imageUrl String? @map("image_url")
   targetScore    Int                   @map("target_score")
   //
   teamAssignment TeamLevelAssignment[]
@@ -64,7 +62,7 @@ model Level {
 }
 
 model TeamLevelAssignment {
-  teamId       String  @map("team_id") @db.Uuid
+  teamId       String  @map("team_id") @db.VarChar(6)
   levelId      String  @map("level_id") @db.Uuid
   sequence     Int
   currentScore Int     @default(0) @map("current_score")
@@ -79,12 +77,15 @@ model TeamLevelAssignment {
 }
 
 model Spell {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @map("spell_id") @db.Uuid
-  rewardScore Int       @map("reward_score")
-  numPoints   Int       @map("num_points")
-  cooldown    Int
-  // 
-  pattern     Pattern[]
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @map("spell_id") @db.Uuid
+  rewardScore     Int                   @map("reward_score")
+  numPoints       Int                   @map("num_points")
+  cooldown        Int
+  imageUrl String?
+  //
+  pattern         Pattern[]
+  teamAssignment  TeamSpellAssignment[]
+  teamsAttempting TeamSpellAttempt[]
 
   @@map("spell")
 }
@@ -92,8 +93,8 @@ model Spell {
 model Pattern {
   id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   numPoints Int                         @map("num_points")
-  spellId   String                      @db.Uuid
-  // 
+  spellId   String                      @db.Uuid @map("spell_id")
+  //
   spell     Spell                       @relation(fields: [spellId], references: [id])
   locations PatternLocationAssignment[]
 
@@ -101,22 +102,63 @@ model Pattern {
 }
 
 model Location {
-  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  latitude  Float                       @db.DoublePrecision
-  longitude Float                       @db.DoublePrecision
+  id           String                      @id @db.VarChar(6)
+  name         String
+  latitude     Float                       @db.DoublePrecision
+  longitude    Float                       @db.DoublePrecision
   //
-  patterns  PatternLocationAssignment[]
+  patterns     PatternLocationAssignment[]
+  teamProgress TeamLocationProgress[]
 
   @@map("location")
 }
 
 model PatternLocationAssignment {
   patternId  String   @db.Uuid
-  locationId String   @db.Uuid
+  locationId String   @db.VarChar(6)
   //
   pattern    Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
   location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@id([patternId, locationId])
   @@map("patternlocationassignment")
+}
+
+model TeamSpellAssignment {
+  teamId            String @map("team_id") @db.VarChar(6)
+  spellId           String @map("spell_id") @db.Uuid
+  remainingCooldown Int    @default(0) @map("remaining_cooldown")
+  //
+  team              Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  spell             Spell  @relation(fields: [spellId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, spellId])
+  @@map("teamspellassignment")
+}
+
+model TeamSpellAttempt {
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId           String                 @map("team_id") @db.VarChar(6)
+  spellId          String                 @map("spell_id") @db.Uuid
+  active           Boolean                @default(true)
+  createdAt        DateTime               @default(dbgenerated("now()")) @map("created_at")
+  //
+  team             Team                   @relation(fields: [teamId], references: [id])
+  spell            Spell                  @relation(fields: [spellId], references: [id])
+  locationProgress TeamLocationProgress[]
+
+  @@unique([teamId, active])
+  @@map("teamspellattempt")
+}
+
+model TeamLocationProgress {
+  attemptId  String           @map("attempt_id") @db.Uuid
+  locationId String           @map("location_id") @db.VarChar(6)
+  createdAt  DateTime         @default(dbgenerated("now()")) @map("created_at")
+  //
+  attempt    TeamSpellAttempt @relation(fields: [attemptId], references: [id])
+  location   Location         @relation(fields: [locationId], references: [id])
+
+  @@id([attemptId, locationId])
+  @@map("teamlocationprogress")
 }
