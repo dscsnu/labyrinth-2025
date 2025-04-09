@@ -21,7 +21,8 @@ func Execute() {
 
 	r := router.NewRouter().
 		WithState(state.NewState().
-			WithJwtSession([]byte(os.Getenv("JWT_SESSION_KEY"))),
+			WithJwtSession([]byte(os.Getenv("JWT_SESSION_KEY"))).
+			WithPostgresDriver(os.Getenv("POSTGRES_URL")),
 		)
 
 	controllers.HandleAll(r)
