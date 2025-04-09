@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"labyrinth/internal/types"
 	"math/big"
 
 	"github.com/jackc/pgx/v5"
@@ -57,13 +58,16 @@ func CreatePostgresDriver(connectionURL string) (*PostgresDriver, error) {
 
 }
 
-// teamCreator is the team member who creates the team
-func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreator string) (created bool, err error) {
+// teamCreatorId is the team member who creates the team
+func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorId string) (bool, error) {
 
 	// Attempt 5 times in total to ensure consistency and account for
 	// any instances of duplicate teamIds or failed random number generation
 
 	var pgErr *pgconn.PgError
+
+	var teamCreated bool
+	var teamCreatedId string
 
 	for range 5 {
 
@@ -74,22 +78,50 @@ func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamC
 
 		}
 
-		_, err = pd.conn.Exec(ctx, "INSERT INTO Team(id, name) VALUES ($1, $2)", teamId, teamCreator)
+		_, err = pd.conn.Exec(ctx, "INSERT INTO team(id, name) VALUES ($1, $2)", teamId, teamName)
 
 		if err == nil {
 
-			created = true
+			teamCreated = true
+			teamCreatedId = teamId
 			break
 
 		}
 		// "23505" is the postgres uniqueness violation code
 		if ok := errors.As(err, &pgErr); ok && pgErr.Code != "23505" {
 
-			return created, err
+			return false, err
 
 		}
 
 	}
-	return created, nil
 
+	if !teamCreated {
+
+		return false, errors.New("Team could not be created due to internal error")
+
+	}
+
+	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, teamCreatorId); err != nil {
+
+		return false, err
+
+	}
+
+	return true, nil
+
+}
+
+func (pd *PostgresDriver) GetUser(ctx context.Context, userEmail string) (types.UserProfile, error) {
+
+	userProfile := types.UserProfile{}
+
+	row := pd.conn.QueryRow(ctx, "SELECT * from userprofile WHERE email=$1", userEmail)
+	if err := row.Scan(&userProfile); err != nil {
+
+		return userProfile, err
+
+	}
+
+	return userProfile, nil
 }
