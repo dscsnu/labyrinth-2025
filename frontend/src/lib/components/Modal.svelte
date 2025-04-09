@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { clickOutside } from "$lib/directive/clickOutside.svelte";
+    import { clickOutside } from "$lib/directives/clickOutside.svelte";
     import { fade } from "svelte/transition";
     import { twMerge } from "tailwind-merge";
 
