@@ -14,7 +14,7 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		userEmail := r.Context().Value("email").(string)
 
 		t := struct {
-			TeamName string `json:"teamName"`
+			TeamName string `json:"team_name"`
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
@@ -28,6 +28,7 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		if err != nil {
 
 			http.Error(w, "internal error occurred", http.StatusInternalServerError)
+			rtr.Logger.Error("internal error", "error ", err.Error())
 			return
 
 		}
