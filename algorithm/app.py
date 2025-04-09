@@ -57,6 +57,7 @@ def load_image(path, size=None):
 # Only store paths, not loaded images
 left_paths, left_files = load_images(LEFT_IMAGE_FOLDER)
 right_paths, right_files = load_images(RIGHT_IMAGE_FOLDER)
+left_size = len(left_paths)
 
 # Cache for loaded images
 image_cache = {}
@@ -149,8 +150,7 @@ def draw():
     elif left_index < len(left_paths):
         left_img = get_cached_image(left_paths[left_index], (image_size, image_size))
         left_rect = WIN.blit(left_img, (left_img_x, img_y))
-        # Fixed counter
-        left_count = FONT.render(f"{left_index + 1}/{len(left_paths)}", True, WHITE)
+        left_count = FONT.render(f"{left_size - len(left_paths) + 1}/{left_size}", True, WHITE)
         count_rect = left_count.get_rect(center=(left_rect.centerx, img_y + image_size + 20))
         WIN.blit(left_count, count_rect)
 
