@@ -9,7 +9,7 @@ import (
 
 type Router struct {
 	http.ServeMux
-	State     state.State
+	State     *state.State
 	Logger    *slog.Logger
 	SrvConfig ServerConfig
 }
@@ -18,7 +18,7 @@ func NewRouter() *Router {
 	return &Router{ServeMux: *http.NewServeMux(), Logger: slog.Default()}
 }
 
-func (r *Router) WithState(state state.State) *Router {
+func (r *Router) WithState(state *state.State) *Router {
 
 	r.State = state
 	return r

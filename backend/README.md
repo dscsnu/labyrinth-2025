@@ -1,3 +1,10 @@
+# To test
+
+```go
+
+go test -v ./...  
+```
+
 # To Build
 
 ```bash

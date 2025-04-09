@@ -5,6 +5,7 @@ import (
 	"labyrinth/internal/router"
 	"labyrinth/internal/state"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -19,7 +20,10 @@ func Execute() {
 	}
 
 	r := router.NewRouter().
-		WithState(*state.NewState())
+		WithState(state.NewState().
+			WithJwtSession([]byte(os.Getenv("JWT_SESSION_KEY"))).
+			WithPostgresDriver(os.Getenv("POSTGRES_URL")),
+		)
 
 	controllers.HandleAll(r)
 	if err := r.Run(); err != nil {
