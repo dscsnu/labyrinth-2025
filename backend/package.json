@@ -3,7 +3,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "prisma": "^6.5.0",
+    "prisma": "^6.6.0",
     "supabase": "^2.20.5"
   },
   "dependencies": {
