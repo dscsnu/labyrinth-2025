@@ -25,7 +25,7 @@ func genRand() (string, error) {
 
 	if randInt.Cmp(baseline) == -1 {
 
-		return randInt.Add(baseline).String(), nil
+		return randInt.Add(randInt, baseline).String(), nil
 
 	}
 
