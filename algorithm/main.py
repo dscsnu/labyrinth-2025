@@ -13,10 +13,10 @@ RED = (200, 70, 70)
 SHADOW = (0, 0, 0)
 
 # Load example image
-# example_image = pygame.image.load("image.png")
+image = pygame.image.load("image.png")
 
 # # Dummy thumbnails list
-# thumbnails = [example_image] * 7  # Replace with actual loading logic
+thumbnails = [image] * 7  # Replace with actual loading logic
 current_index = 0
 pattern_index = 0
 total_patterns = 330
