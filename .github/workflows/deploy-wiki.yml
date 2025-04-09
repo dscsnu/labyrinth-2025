@@ -1,4 +1,4 @@
-name: Deploy Quartz wiki to GitHub Pages
+name: Deploy Quartz
 
 on:
   push:
