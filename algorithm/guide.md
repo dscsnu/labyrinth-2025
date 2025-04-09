@@ -1,18 +1,24 @@
-so basically in the app. you can scroll through the spells and approve or reject each pattern.
+so basically in the app, you can scroll through the spells and approve or reject each pattern.
 
-APPROVE: it will put that pattern into the directory for that spell.
-REJECT: it will put that pattern into the rejected directory.
+APPROVE: It will put that pattern into the directory for that spell.
+REJECT: It will put that pattern into the rejected directory.
+(both of these actions will pull the pattern out of the patterns_output directory and move it to the needed directory)
 BACK: will let you go back to a previous pattern in case you made an error.
 
-right now for spells ive used clash royale spells and images are weirdly named but you get the gist. zap card is a spell and its directory is zapcard so any pattern approved for that spell will be in this directory.
+Right now, for the spells, I've used Clash Royale spells and the images are weirdly named, but you get the gist. Zap card is a spell, and its directory is zapcard, so any pattern approved for that spell will be in this directory.
 
-yes arrow keys work for going through the patterns.
+Yes arrow keys work for going through the patterns.
 
 
 CAUTION: 
 
-any changes you make i.e approving or rejecting a pattern will persist even after you close the app. If you want to reverse it click back but it should be in the SAME session. If you end your session then you won't be able to go back to the patterns you worked on in the previous sessions. 
+1. Any changes you make, i.e approving or rejecting a pattern, will persist even after you close the app.
+2. If you want to reverse it, click back, but it should be in the SAME session.
+3. If you end your session, then you won't be able to go back to the patterns you worked on in the previous sessions. 
 
 IMPROVEMENTS:
 
-the counter for patterns isn't working as intended so I will fix that. Obviously spells need to be implemented. Will make persistence across sessions easier to work with if needed.
+1. The counter for patterns isn't working as intended, so I will fix that.
+2. Obviously, spells need to be implemented.
+3. Will make persistence across sessions easier to work with if needed.
+4. Will make the app transfer the nodes/coordinates for each pattern into the correct directory, so it transfers the data needed.
