@@ -26,7 +26,7 @@ func (r *Router) WithState(state *state.State) *Router {
 }
 
 func (r *Router) Run() error {
-
+	r.Logger.Info("Labyrinth backend running at", "port", r.SrvConfig.Host.String())
 	return http.ListenAndServe(r.SrvConfig.Host.String(), r)
 
 }

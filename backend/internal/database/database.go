@@ -59,7 +59,7 @@ func CreatePostgresDriver(connectionURL string) (*PostgresDriver, error) {
 }
 
 // teamCreatorId is the team member who creates the team
-func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorId string) (bool, error) {
+func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorEmail string) (bool, error) {
 
 	// Attempt 5 times in total to ensure consistency and account for
 	// any instances of duplicate teamIds or failed random number generation
@@ -102,7 +102,13 @@ func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamC
 
 	}
 
-	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, teamCreatorId); err != nil {
+	user, err := pd.GetUser(ctx, teamCreatorEmail)
+
+	if err != nil {
+		return false, err
+	}
+
+	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, user.ID); err != nil {
 
 		return false, err
 
@@ -116,8 +122,8 @@ func (pd *PostgresDriver) GetUser(ctx context.Context, userEmail string) (types.
 
 	userProfile := types.UserProfile{}
 
-	row := pd.conn.QueryRow(ctx, "SELECT * from userprofile WHERE email=$1", userEmail)
-	if err := row.Scan(&userProfile); err != nil {
+	row := pd.conn.QueryRow(ctx, "SELECT id, name, email, created_at from userprofile WHERE email=$1", userEmail)
+	if err := row.Scan(&userProfile.ID, &userProfile.Name, &userProfile.Email, &userProfile.CreatedAt); err != nil {
 
 		return userProfile, err
 

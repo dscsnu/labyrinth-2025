@@ -30,7 +30,7 @@ func Authorized(rtr *router.Router, next http.Handler) http.HandlerFunc {
 		attemptToken, ok := getToken(r)
 		if !ok {
 
-			return
+			rtr.Logger.Error("JWT Token not found")
 
 		}
 
