@@ -1,9 +1,8 @@
 so basically in the app, you can scroll through the spells and approve or reject each pattern.
 
-APPROVE: It will put that pattern into the directory for that spell.
-REJECT: It will put that pattern into the rejected directory.
-(both of these actions will pull the pattern out of the patterns_output directory and move it to the needed directory)
-BACK: will let you go back to a previous pattern in case you made an error.
+1. APPROVE: It will put that pattern into the directory for that spell.
+2. REJECT: It will put that pattern into the rejected directory. (both of these actions will pull the pattern out of the patterns_output directory and move it to the needed directory)
+3. BACK: will let you go back to a previous pattern in case you made an error. (this will pull the pattern out of the new directory and mvoe it back to the patterns_output directory)
 
 Right now, for the spells, I've used Clash Royale spells and the images are weirdly named, but you get the gist. Zap card is a spell, and its directory is zapcard, so any pattern approved for that spell will be in this directory.
 
