@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { device } from '$lib/stores/DeviceStore.js';
-
     let { data } = $props();
     let { supabase, user } = $derived(data);
 
