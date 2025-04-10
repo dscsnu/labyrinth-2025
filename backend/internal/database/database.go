@@ -7,10 +7,19 @@ import (
 	"labyrinth/internal/types"
 	"math/big"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+func UUID(v uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{
+		Bytes: v,
+		Valid: true,
+	}
+}
 
 // Attempt to generate a random 6 digit number and return a string representation
 func genRand() (string, error) {
@@ -59,7 +68,7 @@ func CreatePostgresDriver(connectionURL string) (*PostgresDriver, error) {
 }
 
 // teamCreatorId is the team member who creates the team
-func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorEmail string) (bool, error) {
+func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorId uuid.UUID) (bool, error) {
 
 	// Attempt 5 times in total to ensure consistency and account for
 	// any instances of duplicate teamIds or failed random number generation
@@ -102,13 +111,9 @@ func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamC
 
 	}
 
-	user, err := pd.GetUser(ctx, teamCreatorEmail)
+	pgxUuid := UUID(teamCreatorId)
 
-	if err != nil {
-		return false, err
-	}
-
-	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, user.ID); err != nil {
+	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, pgxUuid); err != nil {
 
 		return false, err
 
