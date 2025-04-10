@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('PLAYER', 'HELPER', 'ADMIN');
+
 -- CreateTable
 CREATE TABLE "gameconfig" (
     "property" TEXT NOT NULL,
@@ -11,6 +14,7 @@ CREATE TABLE "userprofile" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'PLAYER',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
 
     CONSTRAINT "userprofile_pkey" PRIMARY KEY ("id")
@@ -26,7 +30,7 @@ CREATE TABLE "team" (
 
 -- CreateTable
 CREATE TABLE "teammember" (
-    "team_id" UUID NOT NULL,
+    "team_id" VARCHAR(6) NOT NULL,
     "user_id" UUID NOT NULL,
     "is_ready" BOOLEAN NOT NULL DEFAULT false,
 
@@ -46,7 +50,7 @@ CREATE TABLE "level" (
 
 -- CreateTable
 CREATE TABLE "teamlevelassignment" (
-    "team_id" UUID NOT NULL,
+    "team_id" VARCHAR(6) NOT NULL,
     "level_id" UUID NOT NULL,
     "sequence" INTEGER NOT NULL,
     "current_score" INTEGER NOT NULL DEFAULT 0,
@@ -88,14 +92,14 @@ CREATE TABLE "location" (
 -- CreateTable
 CREATE TABLE "patternlocationassignment" (
     "patternId" UUID NOT NULL,
-    "locationId" UUID NOT NULL,
+    "locationId" VARCHAR(6) NOT NULL,
 
     CONSTRAINT "patternlocationassignment_pkey" PRIMARY KEY ("patternId","locationId")
 );
 
 -- CreateTable
 CREATE TABLE "teamspellassignment" (
-    "team_id" UUID NOT NULL,
+    "team_id" VARCHAR(6) NOT NULL,
     "spell_id" UUID NOT NULL,
     "remaining_cooldown" INTEGER NOT NULL DEFAULT 0,
 
@@ -105,7 +109,7 @@ CREATE TABLE "teamspellassignment" (
 -- CreateTable
 CREATE TABLE "teamspellattempt" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "team_id" UUID NOT NULL,
+    "team_id" VARCHAR(6) NOT NULL,
     "spell_id" UUID NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
