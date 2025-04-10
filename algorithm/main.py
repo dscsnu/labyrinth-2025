@@ -1,48 +1,66 @@
 import matplotlib.pyplot as plt
 import itertools
 import os
+import geopandas as gpd
+from shapely.geometry import Point
+import contextily as cx
+from tqdm import tqdm  
 
-# Make output folder
 os.makedirs("patterns_output", exist_ok=True)
 
-# Node No : (x,y)
-positions = {
-    0: (0, 2),
-    1: (1, 2),
-    2: (2, 2),
-    3: (0, 1),
-    4: (1, 5),
-    5: (2, 1),
-    6: (0, 0),
-    7: (1, 0),
-    8: (2, 0),
-    9: (1, -1),
+# Node Name : (lat, lon)
+pos = {
+    "T6": (28.52836141567019, 77.57777379378554),
+    "R": (28.527471246410833, 77.57890336254033),
+    "A": (28.52692140098942, 77.57706407672785),
+    "CnD": (28.525519393291614, 77.57653461322104),
+    "G": (28.52799850829152, 77.5749038301257),
+    "Arc": (28.52723498480195, 77.57292972432113),
+    "SARC": (28.523582249548888, 77.57437275274097),
+    "C1": (28.52440905859402, 77.57308311017349),
+    "Dib": (28.5246012306206, 77.57226886728225),
+    "DH3": (28.52316003957018, 77.5696713403205),
+    "ISC": (28.521496152454514, 77.5712575598366),
 }
 
-# Get all 3-vertex and 4-vertex combinations
-combos_3 = list(itertools.combinations(range(10), 3))
-combos_4 = list(itertools.combinations(range(10), 4))
-# combos_8 = list(itertools.combinations(range(10), 8))
+nodes = list(pos.keys())
+c3 = list(itertools.combinations(nodes, 3))
+c4 = list(itertools.combinations(nodes, 4))
+total = c3 + c4
 
-# Combine all combos
-all_combos = combos_3 + combos_4 #+ combos_8
+# Convert all nodes to GeoDataFrame and reproject to Web Mercator
+pts = gpd.GeoDataFrame(
+    {"name": nodes},
+    geometry = [Point(lon, lat) for lat, lon in pos.values()],
+    crs = "EPSG:4326"
+).to_crs(epsg=3857)
 
-# Plot and save each one
-for i, combo in enumerate(all_combos):
-    print(combo)
-    fig, ax = plt.subplots(figsize=(4, 4))
-    ax.set_title(f"Nodes: {combo}")
-    ax.set_xlim(-1, 3)
-    ax.set_ylim(-2, 3)
-    ax.set_aspect('equal')
-    ax.axis('off')
+for combo in tqdm(total, desc="Generating patterns"):
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.set_title(f"Nodes: {', '.join(combo)}", fontsize=8)
 
-    for node, (x, y) in positions.items():
-        color = 'gray' if node in combo else 'lightblue'
-        size = 300 if node in combo else 200
-        ax.scatter(x, y, s=size, color=color, edgecolors='black', zorder=3)
-        ax.text(x, y, str(node), ha='center', va='center', zorder=4, fontsize=9)
+    # Set map limits around campus
+    buffer = 200
+    bounds = pts.total_bounds
+    ax.set_xlim(bounds[0] - buffer, bounds[2] + buffer)
+    ax.set_ylim(bounds[1] - buffer, bounds[3] + buffer)
 
+    # Add basemap (with transparency)
+    cx.add_basemap(ax, source=cx.providers.OpenStreetMap.Mapnik, alpha=0.5)
+
+    # Plot only the selected nodes as red triangles
+    for name in combo:
+        geom = pts[pts["name"] == name].geometry.values[0]
+        ax.scatter(geom.x, geom.y, s=100, color='red', edgecolors='black', marker='^', zorder=3)
+        ax.text(
+            geom.x, geom.y - 25, name,
+            ha='center', va='top',
+            fontsize=10,
+            zorder=4
+        )
+
+    ax.axis("off")
     plt.tight_layout()
-    plt.savefig(f"patterns_output/pattern_{i:03d}.png")
+    filename = "_".join(combo)
+    plt.savefig(f"patterns_output/{filename}.png", dpi=300)
     plt.close()
