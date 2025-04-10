@@ -15,10 +15,20 @@ async function createUserTriggers() {
                 INSERT INTO public.UserProfile (id, name, email)
                 VALUES (new.id, '', '');
 
+                -- update default data
                 UPDATE public.UserProfile SET
                     name = COALESCE(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
                     email = COALESCE(new.email, '')
                 WHERE id = new.id;
+
+                -- update custom claims
+                UPDATE auth.users SET
+                    raw_app_meta_data = jsonb_set(
+                        COALESCE(raw_app_meta_data, '{}'::jsonb),
+                        '{custom_claims}',
+                        '{"role": "PLAYER"}',
+                        true
+                    ) WHERE id = new.id;
 
                 RETURN NEW;
             END;
@@ -28,6 +38,36 @@ async function createUserTriggers() {
             CREATE OR REPLACE TRIGGER trOnAuthNewUser
                 AFTER INSERT ON auth.users
                 FOR EACH ROW EXECUTE PROCEDURE fnOnAuthNewUser();
+        `,
+        Prisma.sql`
+            CREATE OR REPLACE FUNCTION fnOnUserUpdate()
+            RETURNS TRIGGER
+            LANGUAGE plpgsql
+            SECURITY DEFINER
+            SET search_path = ''
+            AS $$
+            BEGIN
+                UPDATE auth.users
+                SET raw_app_meta_data = jsonb_set(
+                    COALESCE(raw_app_meta_data, '{}'::jsonb),
+                    '{custom_claims}',
+                    json_build_object(
+                        'role', NEW.role
+                    )::jsonb,
+                    true
+                ) WHERE id = NEW.id;
+
+                RETURN NEW;
+            END;
+            $$;
+        `,
+        Prisma.sql`
+            CREATE OR REPLACE TRIGGER trOnUserUpdate
+                AFTER UPDATE OF role ON public.UserProfile
+                FOR EACH ROW
+                WHEN (
+                    OLD.role IS DISTINCT FROM NEW.role
+                ) EXECUTE PROCEDURE fnOnUserUpdate();
         `,
         Prisma.sql`
             CREATE OR REPLACE FUNCTION fnOnAuthDeleteUser()
