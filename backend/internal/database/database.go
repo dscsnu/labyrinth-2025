@@ -11,7 +11,15 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+func UUID(v uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{
+		Bytes: v,
+		Valid: true,
+	}
+}
 
 // Attempt to generate a random 6 digit number and return a string representation
 func genRand() (string, error) {
@@ -103,7 +111,9 @@ func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamC
 
 	}
 
-	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, teamCreatorId); err != nil {
+	pgxUuid := UUID(teamCreatorId)
+
+	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, pgxUuid); err != nil {
 
 		return false, err
 
