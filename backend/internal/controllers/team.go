@@ -33,7 +33,7 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 		}
 
-		rtr.State.DB.CreateTeam(context.Background(), t.TeamName, profile.Email)
+		rtr.State.DB.CreateTeam(context.Background(), t.TeamName, profile.ID)
 
 	})
 
