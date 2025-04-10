@@ -36,22 +36,22 @@ with open(combo_file_path, "w") as f:
     f.write(str(all_combos))
 
 # Plot and save each one
-# for i, combo in enumerate(all_combos):
-#     fig, ax = plt.subplots(figsize=(4, 4))
-#     ax.set_title(f"Nodes: {combo}")
-#     ax.set_xlim(-1, 3)
-#     ax.set_ylim(-2, 3)
-#     ax.set_aspect('equal')
-#     ax.axis('off')
+for i, combo in enumerate(all_combos):
+    fig, ax = plt.subplots(figsize=(4, 4))
+    ax.set_title(f"Nodes: {combo}")
+    ax.set_xlim(-1, 3)
+    ax.set_ylim(-2, 3)
+    ax.set_aspect('equal')
+    ax.axis('off')
 
-#     for node, (x, y) in positions.items():
-#         color = 'gray' if node in combo else 'lightblue'
-#         size = 300 if node in combo else 200
-#         ax.scatter(x, y, s=size, color=color, edgecolors='black', zorder=3)
-#         ax.text(x, y, str(node), ha='center', va='center', zorder=4, fontsize=9)
+    for node, (x, y) in positions.items():
+        color = 'gray' if node in combo else 'lightblue'
+        size = 300 if node in combo else 200
+        ax.scatter(x, y, s=size, color=color, edgecolors='black', zorder=3)
+        ax.text(x, y, str(node), ha='center', va='center', zorder=4, fontsize=9)
 
-#     plt.tight_layout()
-#     plt.savefig(os.path.join(output_dir, f"pattern_{i:03d}.png"))
-#     plt.close()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"pattern_{i:03d}.png"))
+    plt.close()
 
 print("done")
