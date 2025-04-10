@@ -1,6 +1,7 @@
 import pygame
 import os
 import time
+import ast
 import shutil
 
 os.chdir(os.path.dirname(__file__))
@@ -59,6 +60,11 @@ left_paths, left_files = load_images(LEFT_IMAGE_FOLDER)
 right_paths, right_files = load_images(RIGHT_IMAGE_FOLDER)
 left_size = len(left_paths)
 
+with open("patterns_nodes.txt", "r") as f:
+    content = f.read()
+
+left_nodelist = ast.literal_eval(content)
+
 # Cache for loaded images
 image_cache = {}
 image_cache_size = 10  # Number of images to keep in cache
@@ -67,6 +73,7 @@ left_index = 0
 right_index = 0
 previous_index = 0
 action_stack = []  # Tracks actions (approval/rejection) for back functionality
+node_stack = []  # Tracks nodes for back functionality
 
 # --- Rectangles ---
 approve_button = pygame.Rect(0, 0, 160, 50)
@@ -211,6 +218,8 @@ def approve_current(now):
 
     left_filename = left_files[left_index]
     left_path = left_paths[left_index]
+    left_nodes = left_nodelist[left_index]
+    left_nodelist.pop(0)
     
     if len(right_files) == 0:
         return
@@ -223,6 +232,10 @@ def approve_current(now):
     # Move instead of copy
     shutil.move(left_path, target_path)
     action_stack.append(("approved", left_index, target_path, left_path))
+    
+    # prints where the nodes are being assigned
+    node_stack.append(left_nodes)
+    print(f"{left_nodes} assigned to {right_name}")
     
     # Remember the current index before reloading
     current_index = left_index
@@ -250,10 +263,16 @@ def reject_current(now):
     left_filename = left_files[left_index]
     left_path = left_paths[left_index]
     target_path = os.path.join(REJECTED_FOLDER, left_filename)
+    left_nodes = left_nodelist[left_index]
+    left_nodelist.pop(0)
     
     # Move instead of copy
     shutil.move(left_path, target_path)
     action_stack.append(("rejected", left_index, target_path, left_path))
+
+    # prints that the nodes were rejected
+    node_stack.append(left_nodes)
+    print(f"{left_nodes} rejected")
     
     # Remember the current index before reloading
     current_index = left_index
@@ -276,6 +295,11 @@ def go_back(now):
     global left_index, approval_time, show_message, message_text, message_color
     if action_stack:
         action, index, target_path, original_path = action_stack.pop()
+
+        #adds the nodes back to the original list
+        left_nodelist.insert(0, node_stack.pop())
+
+        print(f"{left_nodelist[0]} was retrieved")
         if os.path.exists(target_path):
             # Make sure the directory exists
             os.makedirs(os.path.dirname(original_path), exist_ok=True)
