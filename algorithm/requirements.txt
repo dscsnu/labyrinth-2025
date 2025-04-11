@@ -1,0 +1,6 @@
+matplotlib
+geopandas
+contextily
+shapely
+tqdm
+pygame
