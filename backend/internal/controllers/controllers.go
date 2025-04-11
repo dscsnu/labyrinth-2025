@@ -5,9 +5,14 @@ import (
 	"labyrinth/internal/router"
 	"log/slog"
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 func HandleAll(rtr *router.Router) {
+
+	cors.AllowAll()
+
 	// GET Routes here
 	rtr.HandleFunc("/api", Get(DefaultHandler(rtr)))
 	rtr.HandleFunc("/api/createteam", middleware.Authorized(rtr, Post(TeamCreationHandler(rtr))))
