@@ -60,10 +60,7 @@ left_paths, left_files = load_images(LEFT_IMAGE_FOLDER)
 right_paths, right_files = load_images(RIGHT_IMAGE_FOLDER)
 left_size = len(left_paths)
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(script_dir, "patterns_nodes.txt")
-
-with open(file_path, "r") as f:
+with open("patterns_nodes.txt", "r") as f:
     content = f.read()
 
 left_nodelist = ast.literal_eval(content)
