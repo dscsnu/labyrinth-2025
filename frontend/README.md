@@ -8,7 +8,7 @@ Automatically append jwt to outgoing request.
 import { fetchWithAuth } from '$lib/utils/fetchWithAuth.js';
 
 const testFetch = async () => {
-    const response = await fetchWithAuth('https://github.com/dscsnu/labyrinth-2025');
+    const response = await fetchWithAuth('/api/team');
     const data = await response.json();
 
     /* ---snip--- */
@@ -53,4 +53,26 @@ Used to run some function when something is clicked outside the given element.
         Hello Cro
     </Modal>
 </main>
+```
+
+### validateInput
+Used on Input elements to validate any user input
+```svelte
+<script lang="ts>
+    import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte;
+</script>
+
+<!--
+    Any user will not be able to input non numerice characters into the following.
+    The length of the input will also be capped to 6.
+ -->
+<input
+    type={`text`}
+    id={`some_id`}
+    use:validateInput={{
+        allowed: [ValidationOptions.NUMERIC],
+        maxLength: 6
+    }}
+    bind:value
+/>
 ```
