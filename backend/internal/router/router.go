@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 type Router struct {
@@ -34,7 +36,7 @@ func (r *Router) WithState(state *state.State) *Router {
 
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
-	res.Header().Set("Access-Control-Allow-Origin", "*")
+	cors.AllowAll().HandlerFunc(res, req)
 	r.ServeHTTP(res, req)
 
 }
