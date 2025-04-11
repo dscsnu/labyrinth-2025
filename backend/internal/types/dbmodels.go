@@ -21,3 +21,9 @@ type UserProfile struct {
 	Role      UserRole  `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type Team struct {
+	ID      string        `json:"id"`
+	Name    string        `json:"name"`
+	Members []UserProfile `json:"members"`
+}
