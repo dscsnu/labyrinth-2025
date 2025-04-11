@@ -47,7 +47,8 @@ pts = gpd.GeoDataFrame(
     crs = "EPSG:4326"
 ).to_crs(epsg=3857)
 
-for combo in tqdm(total, desc="Generating patterns"):
+# Plot and save each pattern
+for i, combo in enumerate(tqdm(total, desc="Generating patterns")):
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.set_title(f"Nodes: {', '.join(combo)}", fontsize=8)
 
@@ -73,7 +74,7 @@ for combo in tqdm(total, desc="Generating patterns"):
 
     ax.axis("off")
     plt.tight_layout()
-    filename = "_".join(combo)
+    filename = f"pattern_{i:03d}"  # Use numbered filenames
     plt.savefig(os.path.join(output_dir, f"{filename}.png"), dpi=300)
     plt.close()
 
