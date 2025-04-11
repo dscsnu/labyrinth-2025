@@ -37,7 +37,7 @@ func (r *Router) WithState(state *state.State) *Router {
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	cors.AllowAll().HandlerFunc(res, req)
-	r.ServeHTTP(res, req)
+	r.ServeMux.ServeHTTP(res, req)
 
 }
 
