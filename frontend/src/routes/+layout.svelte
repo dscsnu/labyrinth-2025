@@ -9,6 +9,8 @@
     import { setToken, token } from '$lib/stores/TokenStore';
     import { ToastStore } from '$lib/stores/ToastStore';
     import Toast from '$lib/components/Toast.svelte';
+    import { LoadingStore } from '$lib/stores/LoadingStore';
+    import Loading from '$lib/components/Loading.svelte';
 
 	let { data, children } = $props();
 	let { supabase, session, user } = $derived(data);
@@ -50,4 +52,8 @@
 	{#each $ToastStore as toast (toast.id)}
 		<Toast {...toast}/>
 	{/each}
+{/if}
+
+{#if $LoadingStore}
+	<Loading />
 {/if}
