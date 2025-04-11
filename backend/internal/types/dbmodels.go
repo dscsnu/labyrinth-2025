@@ -22,8 +22,13 @@ type UserProfile struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type TeamMember struct {
+	UserProfile
+	IsReady bool `json:"is_ready"`
+}
+
 type Team struct {
-	ID      string        `json:"id"`
-	Name    string        `json:"name"`
-	Members []UserProfile `json:"members"`
+	ID      string       `json:"id"`
+	Name    string       `json:"name"`
+	Members []TeamMember `json:"members"`
 }

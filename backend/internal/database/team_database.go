@@ -69,27 +69,25 @@ func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types
 		return team, err
 	}
 
-	rows, err := pd.pool.Query(ctx, "SELECT user_id FROM teammember WHERE team_id=$1", teamId)
+	rows, err := pd.pool.Query(ctx, `
+		SELECT u.id, u.name, u.email, u.created_at, u.role, tm.is_ready
+		FROM teammember tm
+		JOIN userprofile u ON u.id = tm.user_id
+		WHERE tm.team_id = $1
+		`, teamId)
 	if err != nil {
 		return team, err
 	}
 	defer rows.Close()
 
-	var members []types.UserProfile
+	var members []types.TeamMember
 
 	for rows.Next() {
-		var userId uuid.UUID
-
-		if err := rows.Scan(&userId); err != nil {
+		var member types.TeamMember
+		if err := rows.Scan(&member.ID, &member.Name, &member.Email, &member.CreatedAt, &member.Role, &member.IsReady); err != nil {
 			return team, err
 		}
-
-		user, err := pd.GetUserById(ctx, userId)
-		if err != nil {
-			return team, err
-		}
-
-		members = append(members, user)
+		members = append(members, member)
 	}
 
 	team.Members = members
