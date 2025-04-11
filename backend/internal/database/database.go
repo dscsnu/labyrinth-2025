@@ -8,10 +8,9 @@ import (
 	"math/big"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func UUID(v uuid.UUID) pgtype.UUID {
@@ -21,117 +20,92 @@ func UUID(v uuid.UUID) pgtype.UUID {
 	}
 }
 
-// Attempt to generate a random 6 digit number and return a string representation
 func genRand() (string, error) {
-
 	randInt, err := rand.Int(rand.Reader, big.NewInt(999999))
 	if err != nil {
-
 		return "", err
 	}
-
 	baseline := big.NewInt(100000)
-
 	if randInt.Cmp(baseline) == -1 {
-
 		return randInt.Add(randInt, baseline).String(), nil
-
 	}
-
 	return randInt.String(), nil
-
 }
 
 type PostgresDriver struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
-func (pd *PostgresDriver) Close(ctx context.Context) error {
-
-	return pd.conn.Close(ctx)
-
+func (pd *PostgresDriver) Close() {
+	pd.pool.Close()
 }
 
-// Connect to postgres instance
 func CreatePostgresDriver(connectionURL string) (*PostgresDriver, error) {
-
-	conn, err := pgx.Connect(context.Background(), connectionURL)
+	pool, err := pgxpool.New(context.Background(), connectionURL)
 	if err != nil {
-		return &PostgresDriver{}, err
+		return nil, err
 	}
-
-	return &PostgresDriver{
-
-		conn: conn,
-	}, nil
-
+	return &PostgresDriver{pool: pool}, nil
 }
 
-// teamCreatorId is the team member who creates the team
-func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorId uuid.UUID) (bool, error) {
-
-	// Attempt 5 times in total to ensure consistency and account for
-	// any instances of duplicate teamIds or failed random number generation
-
+func (pd *PostgresDriver) CreateTeam(ctx context.Context, teamName string, teamCreatorId uuid.UUID) (string, error) {
 	var pgErr *pgconn.PgError
-
-	var teamCreated bool
 	var teamCreatedId string
 
 	for range 5 {
-
 		teamId, err := genRand()
 		if err != nil {
-
 			continue
-
 		}
 
-		_, err = pd.conn.Exec(ctx, "INSERT INTO team(id, name) VALUES ($1, $2)", teamId, teamName)
-
+		_, err = pd.pool.Exec(ctx, "INSERT INTO team(id, name) VALUES ($1, $2)", teamId, teamName)
 		if err == nil {
-
-			teamCreated = true
 			teamCreatedId = teamId
 			break
-
 		}
-		// "23505" is the postgres uniqueness violation code
 		if ok := errors.As(err, &pgErr); ok && pgErr.Code != "23505" {
-
-			return false, err
-
+			return "", err
 		}
-
 	}
 
-	if !teamCreated {
-
-		return false, errors.New("Team could not be created due to internal error")
-
+	if teamCreatedId == "" {
+		return "", errors.New("team could not be created due to internal error")
 	}
 
 	pgxUuid := UUID(teamCreatorId)
-
-	if _, err := pd.conn.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, pgxUuid); err != nil {
-
-		return false, err
-
+	if _, err := pd.pool.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamCreatedId, pgxUuid); err != nil {
+		return "", err
 	}
 
-	return true, nil
+	return teamCreatedId, nil
+}
 
+func (pd *PostgresDriver) AddTeamMember(ctx context.Context, teamId string, userId uuid.UUID) error {
+	var count int
+
+	err := pd.pool.QueryRow(ctx, `SELECT COUNT(*) FROM teammember WHERE team_id=$1`, teamId).Scan(&count)
+
+	if err != nil {
+		return err
+	}
+
+	if count >= 4 {
+		return errors.New("team is full")
+	}
+
+	if _, err := pd.pool.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamId, userId); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (pd *PostgresDriver) GetUser(ctx context.Context, userEmail string) (types.UserProfile, error) {
-
 	userProfile := types.UserProfile{}
+	row := pd.pool.QueryRow(ctx, "SELECT id, name, email, created_at, role from userprofile WHERE email=$1", userEmail)
 
-	row := pd.conn.QueryRow(ctx, "SELECT id, name, email, created_at from userprofile WHERE email=$1", userEmail)
-	if err := row.Scan(&userProfile.ID, &userProfile.Name, &userProfile.Email, &userProfile.CreatedAt); err != nil {
-
+	if err := row.Scan(&userProfile.ID, &userProfile.Name, &userProfile.Email, &userProfile.CreatedAt, &userProfile.Role); err != nil {
 		return userProfile, err
-
 	}
 
 	return userProfile, nil

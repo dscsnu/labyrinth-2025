@@ -19,4 +19,3 @@ IMPROVEMENTS:
 
 1. Obviously, spells need to be implemented.
 2. Will make persistence across sessions easier to work with if needed.
-3. Will make the app transfer the nodes/coordinates for each pattern into the correct directory, so it transfers the data needed.

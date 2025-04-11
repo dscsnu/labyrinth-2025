@@ -6,4 +6,5 @@ node_modules
 # macOS Specific
 .DS_Store
 **/.DS_Store
-
+algorithm/patterns_output
+algorithm/.venv
