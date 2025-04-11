@@ -39,7 +39,7 @@ CREATE TABLE "teammember" (
 
 -- CreateTable
 CREATE TABLE "level" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "image_url" TEXT,
@@ -51,7 +51,7 @@ CREATE TABLE "level" (
 -- CreateTable
 CREATE TABLE "teamlevelassignment" (
     "team_id" VARCHAR(6) NOT NULL,
-    "level_id" UUID NOT NULL,
+    "level_id" INTEGER NOT NULL,
     "sequence" INTEGER NOT NULL,
     "current_score" INTEGER NOT NULL DEFAULT 0,
     "is_finished" BOOLEAN NOT NULL DEFAULT false,
@@ -63,9 +63,9 @@ CREATE TABLE "teamlevelassignment" (
 CREATE TABLE "spell" (
     "spell_id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "reward_score" INTEGER NOT NULL,
-    "num_points" INTEGER NOT NULL,
+    "num_vertex" INTEGER NOT NULL,
     "cooldown" INTEGER NOT NULL,
-    "imageUrl" TEXT,
+    "image_url" TEXT,
 
     CONSTRAINT "spell_pkey" PRIMARY KEY ("spell_id")
 );
@@ -73,7 +73,7 @@ CREATE TABLE "spell" (
 -- CreateTable
 CREATE TABLE "pattern" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "num_points" INTEGER NOT NULL,
+    "num_vertex" INTEGER NOT NULL,
     "spell_id" UUID NOT NULL,
 
     CONSTRAINT "pattern_pkey" PRIMARY KEY ("id")
