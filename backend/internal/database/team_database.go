@@ -51,7 +51,7 @@ func (pd *PostgresDriver) AddTeamMember(ctx context.Context, teamId string, user
 	}
 
 	if count >= 4 {
-		return errors.New("team is full")
+		return errors.New("fullteam")
 	}
 
 	if _, err := pd.pool.Exec(ctx, "INSERT INTO teammember(team_id, user_id) VALUES ($1,$2)", teamId, userId); err != nil {
@@ -59,6 +59,60 @@ func (pd *PostgresDriver) AddTeamMember(ctx context.Context, teamId string, user
 	}
 
 	return nil
+}
+
+func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types.Team, error) {
+	team := types.Team{}
+
+	err := pd.pool.QueryRow(ctx, "SELECT id, name FROM team WHERE team.id=$1", teamId).Scan(&team.ID, &team.Name)
+	if err != nil {
+		return team, err
+	}
+
+	rows, err := pd.pool.Query(ctx, "SELECT user_id FROM teammember WHERE team_id=$1", teamId)
+	if err != nil {
+		return team, err
+	}
+	defer rows.Close()
+
+	var members []types.UserProfile
+
+	for rows.Next() {
+		var userId uuid.UUID
+
+		if err := rows.Scan(&userId); err != nil {
+			return team, err
+		}
+
+		user, err := pd.GetUserById(ctx, userId)
+		if err != nil {
+			return team, err
+		}
+
+		members = append(members, user)
+	}
+
+	team.Members = members
+	return team, nil
+
+}
+
+func (pd *PostgresDriver) GetTeamByUserId(ctx context.Context, userId uuid.UUID) (types.Team, error) {
+
+	var team = types.Team{}
+
+	err := pd.pool.QueryRow(ctx, "SELECT team_id FROM teammember WHERE teammember.user_id=$1", userId).Scan(&team.ID)
+	if err != nil {
+		return team, err
+	}
+
+	team, err = pd.GetTeamByID(ctx, team.ID)
+	if err != nil {
+		return team, err
+	}
+
+	return team, nil
+
 }
 
 func (pd *PostgresDriver) GetUser(ctx context.Context, userEmail string) (types.UserProfile, error) {
@@ -70,4 +124,15 @@ func (pd *PostgresDriver) GetUser(ctx context.Context, userEmail string) (types.
 	}
 
 	return userProfile, nil
+}
+
+func (pd *PostgresDriver) GetUserById(ctx context.Context, userId uuid.UUID) (types.UserProfile, error) {
+	user := types.UserProfile{}
+	row := pd.pool.QueryRow(ctx, "SELECT id, name, email, created_at, role FROM userprofile WHERE id=$1", userId)
+
+	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.Role); err != nil {
+		return user, err
+	}
+
+	return user, nil
 }
