@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 type Router struct {
@@ -18,6 +20,13 @@ func NewRouter() *Router {
 	return &Router{ServeMux: *http.NewServeMux(), Logger: slog.Default()}
 }
 
+func (r *Router) WithServerConfig(serverConfig ServerConfig) *Router {
+
+	r.SrvConfig = serverConfig
+	return r
+
+}
+
 func (r *Router) WithState(state *state.State) *Router {
 
 	r.State = state
@@ -25,10 +34,10 @@ func (r *Router) WithState(state *state.State) *Router {
 
 }
 
-func (r *Router) WithServerConfig(serverConfig ServerConfig) *Router {
+func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
-	r.SrvConfig = serverConfig
-	return r
+	cors.AllowAll().HandlerFunc(res, req)
+	r.ServeMux.ServeHTTP(res, req)
 
 }
 
