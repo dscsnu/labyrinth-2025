@@ -120,7 +120,6 @@
             }
 
             // Parse the team data from the response
-            console.log(res);
             const teamResponse = await res.json();
             // Create TeamData object using the response from backend
             const teamData: TeamData = {
