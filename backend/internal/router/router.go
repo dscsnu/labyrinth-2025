@@ -18,6 +18,13 @@ func NewRouter() *Router {
 	return &Router{ServeMux: *http.NewServeMux(), Logger: slog.Default()}
 }
 
+func (r *Router) WithServerConfig(serverConfig ServerConfig) *Router {
+
+	r.SrvConfig = serverConfig
+	return r
+
+}
+
 func (r *Router) WithState(state *state.State) *Router {
 
 	r.State = state
