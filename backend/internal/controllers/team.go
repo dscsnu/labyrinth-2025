@@ -84,6 +84,16 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
+		team, err := rtr.State.DB.GetTeamByID(context.Background(), t.TeamId)
+		if err != nil {
+			http.Error(w, "error fetching the team", http.StatusInternalServerError)
+			rtr.Logger.Error("internal error while getting team", "error", err.Error())
+		}
+
+		if err := json.NewEncoder(w).Encode(team); err != nil {
+			http.Error(w, "error encoding response", http.StatusInternalServerError)
+		}
+
 	})
 
 }
