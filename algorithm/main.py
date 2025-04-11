@@ -6,7 +6,15 @@ from shapely.geometry import Point
 import contextily as cx
 from tqdm import tqdm  
 
-os.makedirs("patterns_output", exist_ok=True)
+# Get the directory where this script lives
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+# Create patterns_output folder inside the script's directory
+output_dir = os.path.join(script_dir, "patterns_output")
+os.makedirs(output_dir, exist_ok=True)
+
+# File path for the text file (in the same script folder)
+combo_file_path = os.path.join(script_dir, "patterns_nodes.txt")
 
 # Node Name : (lat, lon)
 pos = {
@@ -27,6 +35,10 @@ nodes = list(pos.keys())
 c3 = list(itertools.combinations(nodes, 3))
 c4 = list(itertools.combinations(nodes, 4))
 total = c3 + c4
+
+# Write all combinations to patterns_nodes.txt
+with open(combo_file_path, "w") as f:
+    f.write(str(total))
 
 # Convert all nodes to GeoDataFrame and reproject to Web Mercator
 pts = gpd.GeoDataFrame(
@@ -62,5 +74,7 @@ for combo in tqdm(total, desc="Generating patterns"):
     ax.axis("off")
     plt.tight_layout()
     filename = "_".join(combo)
-    plt.savefig(f"patterns_output/{filename}.png", dpi=300)
+    plt.savefig(os.path.join(output_dir, f"{filename}.png"), dpi=300)
     plt.close()
+
+print("done")
