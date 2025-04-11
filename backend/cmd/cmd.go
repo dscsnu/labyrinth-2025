@@ -27,13 +27,11 @@ func Execute() {
 	}
 
 	r := router.NewRouter().
+		WithServerConfig(router.ServerConfig{Host: host}).
 		WithState(state.NewState().
 			WithJwtSession([]byte(os.Getenv("JWT_SESSION_KEY"))).
 			WithPostgresDriver(os.Getenv("POSTGRES_URL")),
 		)
-
-	r.SrvConfig.Host = host
-
 	controllers.HandleAll(r)
 	if err := r.Run(); err != nil {
 

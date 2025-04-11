@@ -7,6 +7,12 @@ datasource db {
   url      = env("PRISMA_DATABASE_URL")
 }
 
+enum UserRole {
+  PLAYER
+  HELPER
+  ADMIN
+}
+
 model GameConfig {
   property String @id
   value    String
@@ -18,6 +24,7 @@ model UserProfile {
   id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   email     String      @unique
+  role      UserRole    @default(PLAYER)
   createdAt DateTime    @default(dbgenerated("now()")) @map("created_at")
   //
   member    TeamMember?
@@ -53,7 +60,7 @@ model Level {
   id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String
   description    String?
-  imageUrl String? @map("image_url")
+  imageUrl       String?               @map("image_url")
   targetScore    Int                   @map("target_score")
   //
   teamAssignment TeamLevelAssignment[]
@@ -81,7 +88,7 @@ model Spell {
   rewardScore     Int                   @map("reward_score")
   numPoints       Int                   @map("num_points")
   cooldown        Int
-  imageUrl String?
+  imageUrl        String?
   //
   pattern         Pattern[]
   teamAssignment  TeamSpellAssignment[]
@@ -93,7 +100,7 @@ model Spell {
 model Pattern {
   id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   numPoints Int                         @map("num_points")
-  spellId   String                      @db.Uuid @map("spell_id")
+  spellId   String                      @map("spell_id") @db.Uuid
   //
   spell     Spell                       @relation(fields: [spellId], references: [id])
   locations PatternLocationAssignment[]
