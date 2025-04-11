@@ -43,12 +43,16 @@ BIG_FONT = pygame.font.SysFont("arial", 32, bold=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 os.makedirs(REJECTED_FOLDER, exist_ok=True)
 
+
 # --- Load Images ---
 def load_images(folder):
     """Load image file paths without loading the actual images yet"""
-    files = sorted([f for f in os.listdir(folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))])
+    files = sorted(
+        [f for f in os.listdir(folder) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    )
     paths = [os.path.join(folder, f) for f in files]
     return paths, files
+
 
 def load_image(path, size=None):
     """Load a single image with optional resizing"""
@@ -56,6 +60,7 @@ def load_image(path, size=None):
     if size:
         img = pygame.transform.smoothscale(img, size)
     return img
+
 
 # Only store paths, not loaded images
 left_paths, left_files = load_images(LEFT_IMAGE_FOLDER)
@@ -103,16 +108,27 @@ next_hold_time = 0
 key_held_left = False
 key_held_right = False
 
+
 # --- UI Draw ---
 def draw_button(rect, text, color, hover=False):
     offset = 4
-    draw_rect = pygame.Rect(rect.x, rect.y + (2 if hover else 0), rect.width, rect.height)
+    draw_rect = pygame.Rect(
+        rect.x, rect.y + (2 if hover else 0), rect.width, rect.height
+    )
     if hover:
-        shadow_rect = pygame.Rect(draw_rect.x + offset, draw_rect.y + offset, draw_rect.width, draw_rect.height)
+        shadow_rect = pygame.Rect(
+            draw_rect.x + offset,
+            draw_rect.y + offset,
+            draw_rect.width,
+            draw_rect.height,
+        )
         pygame.draw.rect(WIN, BLACK, shadow_rect, border_radius=12)
     pygame.draw.rect(WIN, color, draw_rect, border_radius=12)
     label = FONT.render(text, True, WHITE)
-    WIN.blit(label, (draw_rect.x + (rect.width - label.get_width()) // 2, draw_rect.y + 12))
+    WIN.blit(
+        label, (draw_rect.x + (rect.width - label.get_width()) // 2, draw_rect.y + 12)
+    )
+
 
 def draw_arrow(center_x, center_y, direction="left", hover=False):
     if hover:
@@ -121,10 +137,19 @@ def draw_arrow(center_x, center_y, direction="left", hover=False):
         WIN.blit(shadow_surf, (center_x - 36 + 2, center_y - 36 + 2))
     pygame.draw.circle(WIN, ARROW_BG, (center_x, center_y), 30)
     if direction == "left":
-        points = [(center_x + 10, center_y - 15), (center_x - 10, center_y), (center_x + 10, center_y + 15)]
+        points = [
+            (center_x + 10, center_y - 15),
+            (center_x - 10, center_y),
+            (center_x + 10, center_y + 15),
+        ]
     else:
-        points = [(center_x - 10, center_y - 15), (center_x + 10, center_y), (center_x - 10, center_y + 15)]
+        points = [
+            (center_x - 10, center_y - 15),
+            (center_x + 10, center_y),
+            (center_x - 10, center_y + 15),
+        ]
     pygame.draw.polygon(WIN, WHITE, points)
+
 
 def get_cached_image(path, size):
     """Get an image from cache or load it if not cached"""
@@ -138,11 +163,18 @@ def get_cached_image(path, size):
         image_cache[cache_key] = load_image(path, size)
     return image_cache[cache_key]
 
+
 def draw():
     global show_message
     WIN.fill(BG_COLOR)
     screen_width, screen_height = WIN.get_size()
-    pygame.draw.line(WIN, DIVIDER_COLOR, (screen_width // 2, 0), (screen_width // 2, screen_height), 3)
+    pygame.draw.line(
+        WIN,
+        DIVIDER_COLOR,
+        (screen_width // 2, 0),
+        (screen_width // 2, screen_height),
+        3,
+    )
 
     image_max_size = min(screen_width // 3, screen_height // 2)
     image_size = min(image_max_size, 350)
@@ -153,28 +185,48 @@ def draw():
     # Display "No images" message if left folder is empty
     if len(left_paths) == 0:
         no_images_text = FONT.render("No images in source folder", True, WHITE)
-        WIN.blit(no_images_text, (left_img_x + (image_size - no_images_text.get_width()) // 2, 
-                                 img_y + image_size // 2))
+        WIN.blit(
+            no_images_text,
+            (
+                left_img_x + (image_size - no_images_text.get_width()) // 2,
+                img_y + image_size // 2,
+            ),
+        )
     # Draw left image if available
     elif left_index < len(left_paths):
         left_img = get_cached_image(left_paths[left_index], (image_size, image_size))
         left_rect = WIN.blit(left_img, (left_img_x, img_y))
-        left_count = FONT.render(f"{left_size - len(left_paths) + 1}/{left_size}", True, WHITE)
-        count_rect = left_count.get_rect(center=(left_rect.centerx, img_y + image_size + 20))
+        left_count = FONT.render(
+            f"{left_size - len(left_paths) + 1}/{left_size}", True, WHITE
+        )
+        count_rect = left_count.get_rect(
+            center=(left_rect.centerx, img_y + image_size + 20)
+        )
         WIN.blit(left_count, count_rect)
 
     # Display message if right folder is empty
     if len(right_paths) == 0:
         no_images_text = FONT.render("No images in right folder", True, WHITE)
-        WIN.blit(no_images_text, (right_img_x + (image_size - no_images_text.get_width()) // 2, 
-                                 img_y + image_size // 2))
+        WIN.blit(
+            no_images_text,
+            (
+                right_img_x + (image_size - no_images_text.get_width()) // 2,
+                img_y + image_size // 2,
+            ),
+        )
     # Draw right image if available
     elif right_paths:
         right_path_index = right_index % len(right_paths)
-        right_img = get_cached_image(right_paths[right_path_index], (image_size, image_size))
+        right_img = get_cached_image(
+            right_paths[right_path_index], (image_size, image_size)
+        )
         right_rect = WIN.blit(right_img, (right_img_x, img_y))
-        right_count = FONT.render(f"{right_path_index + 1}/{len(right_paths)}", True, WHITE)
-        count_rect = right_count.get_rect(center=(right_rect.centerx, img_y + image_size + 20))
+        right_count = FONT.render(
+            f"{right_path_index + 1}/{len(right_paths)}", True, WHITE
+        )
+        count_rect = right_count.get_rect(
+            center=(right_rect.centerx, img_y + image_size + 20)
+        )
         WIN.blit(right_count, count_rect)
 
     arrow_y = img_y + image_size // 2
@@ -194,8 +246,18 @@ def draw():
     back_button.topleft = (buttons_center - back_button.width // 2, button_y + 60)
 
     # Display buttons with appropriate hover effects
-    draw_button(approve_button, "APPROVE", DARK_BLUE if approve_button.collidepoint(mouse_pos) else BLUE, hover=approve_button.collidepoint(mouse_pos))
-    draw_button(reject_button, "REJECT", DARK_RED if reject_button.collidepoint(mouse_pos) else RED, hover=reject_button.collidepoint(mouse_pos))
+    draw_button(
+        approve_button,
+        "APPROVE",
+        DARK_BLUE if approve_button.collidepoint(mouse_pos) else BLUE,
+        hover=approve_button.collidepoint(mouse_pos),
+    )
+    draw_button(
+        reject_button,
+        "REJECT",
+        DARK_RED if reject_button.collidepoint(mouse_pos) else RED,
+        hover=reject_button.collidepoint(mouse_pos),
+    )
     draw_button(back_button, "BACK", GRAY, hover=back_button.collidepoint(mouse_pos))
 
     # Show message if needed
@@ -205,12 +267,14 @@ def draw():
 
     pygame.display.update()
 
+
 def reload_images():
     """Reload image paths after file operations"""
     global left_paths, left_files, image_cache
     left_paths, left_files = load_images(LEFT_IMAGE_FOLDER)
     # Clear cache when reloading images
     image_cache.clear()
+
 
 def approve_current(now):
     global left_index, previous_index, approval_time, show_message, message_text, message_color
@@ -222,64 +286,77 @@ def approve_current(now):
     left_path = left_paths[left_index]
     left_nodes = left_nodelist[left_index]
     left_nodelist.pop(0)
-    
+
     if len(right_files) == 0:
         return
-        
+
     right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
     target_dir = os.path.join(OUTPUT_FOLDER, right_name)
     os.makedirs(target_dir, exist_ok=True)
     target_path = os.path.join(target_dir, left_filename)
-    
+
     # Move instead of copy
     shutil.move(left_path, target_path)
     action_stack.append(("approved", left_index, target_path, left_path))
-    
+
     # prints where the nodes are being assigned
     node_stack.append(left_nodes)
-    f = open("spell_patterns.json", "r")
-    data = json.load(f)
-    f.close()
-    data["valid_patterns"] += 1
-    data[right_name]["valid_patterns"] += 1
+    file_exists = False
+    try:
+        with open("spell_patterns.json", "r"):
+            file_exists = True
+    except FileNotFoundError:
+        pass
+    if file_exists:
+        f = open("spell_patterns.json", "r")
+        data = json.load(f)
+        f.close()
+        data["valid_patterns"] += 1
+    else:
+        data = {}
+        data["valid_patterns"] = 1
     if right_name not in data:
-        data[right_name] = [left_nodes]
+        data[right_name] = {}
+        data[right_name]["patterns"] = [left_nodes]
+        data[right_name]["valid_patterns"] = 1
     else:
         data[right_name]["patterns"].append(left_nodes)
-    f = open("spell_patterns.json", "w")
+        data[right_name]["valid_patterns"] += 1
+    f = open("spell_patterns.json", "w+")
     f.write(json.dumps(data, indent=4))
     f.close()
     print(f"{left_nodes} assigned to {right_name}")
-    
+
     # Remember the current index before reloading
     current_index = left_index
-    
+
     # After moving, reload the image list
     reload_images()
-    
+
     # Stay at the same index after removing, unless we're at the end
     if current_index >= len(left_paths):
         left_index = max(0, len(left_paths) - 1)
     else:
         left_index = current_index
-        
+
     approval_time = now
     message_text = "Approved!"
     message_color = GREEN
     show_message = True
 
+
 def reject_current(now):
     global left_index, previous_index, approval_time, show_message, message_text, message_color
-    
+
     if left_index >= len(left_paths) or len(left_paths) == 0:
         return
-        
+
     left_filename = left_files[left_index]
     left_path = left_paths[left_index]
     target_path = os.path.join(REJECTED_FOLDER, left_filename)
     left_nodes = left_nodelist[left_index]
     left_nodelist.pop(0)
-    
+
     # Move instead of copy
     shutil.move(left_path, target_path)
     action_stack.append(("rejected", left_index, target_path, left_path))
@@ -287,41 +364,52 @@ def reject_current(now):
     # prints that the nodes were rejected
     node_stack.append(left_nodes)
     right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
-    f = open("spell_patterns.json", "r")
-    data = json.load(f)
-    f.close()
-    if right_name in data:
-        if left_nodes in data[right_name]:
-            data[right_name].remove(left_nodes)
-            if len(data[right_name]) == 0:
-                data.remove(right_name)
-    f = open("spell_patterns.json", "w")
-    f.write(json.dumps(data, indent=4))
-    f.close()
-    
+    file_exists = False
+    try:
+        with open("spell_patterns.json", "r"):
+            file_exists = True
+    except FileNotFoundError:
+        pass
+    if file_exists:
+        f = open("spell_patterns.json", "r")
+        data = json.load(f)
+        f.close()
+        if right_name in data:
+            if left_nodes in data[right_name]:
+                data[right_name].remove(left_nodes)
+                if len(data[right_name]) == 0:
+                    data.remove(right_name)
+                else:
+                    data[right_name]["valid_patterns"] -= 1
+                data["valid_patterns"] -= 1
+        f = open("spell_patterns.json", "w+")
+        f.write(json.dumps(data, indent=4))
+        f.close()
+
     # Remember the current index before reloading
     current_index = left_index
-    
+
     # After moving, reload the image list
     reload_images()
-    
+
     # Stay at the same index after removing, unless we're at the end
     if current_index >= len(left_paths):
         left_index = max(0, len(left_paths) - 1)
     else:
         left_index = current_index
-        
+
     approval_time = now
     message_text = "Rejected!"
     message_color = RED
     show_message = True
+
 
 def go_back(now):
     global left_index, approval_time, show_message, message_text, message_color
     if action_stack:
         action, index, target_path, original_path = action_stack.pop()
 
-        #adds the nodes back to the original list
+        # adds the nodes back to the original list
         left_nodelist.insert(0, node_stack.pop())
 
         print(f"{left_nodelist[0]} was retrieved")
@@ -330,10 +418,10 @@ def go_back(now):
             os.makedirs(os.path.dirname(original_path), exist_ok=True)
             # Move the file back to its original location
             shutil.move(target_path, original_path)
-            
+
             # Reload images after moving it back
             reload_images()
-            
+
             # Find the index of the restored file
             try:
                 restored_filename = os.path.basename(original_path)
@@ -342,11 +430,12 @@ def go_back(now):
             except ValueError:
                 # If for some reason we can't find the file, just stay at current index
                 pass
-                
+
             approval_time = now
             message_text = "Undone"
             message_color = GRAY
             show_message = True
+
 
 # --- Main Loop ---
 def main():
@@ -360,11 +449,11 @@ def main():
 
     while running:
         now = time.time()
-        
+
         # Hide message after duration
         if show_message and now - approval_time > message_duration:
             show_message = False
-        
+
         # Handle key holding for scrolling
         if right_paths:
             if (holding_left or key_held_left) and now >= next_hold_time:
@@ -391,7 +480,10 @@ def main():
                     next_hold_time = now
                 elif event.key == pygame.K_f:
                     fullscreen = not fullscreen
-                    pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE)
+                    pygame.display.set_mode(
+                        (WIDTH, HEIGHT),
+                        pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE,
+                    )
 
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
@@ -418,11 +510,12 @@ def main():
 
         # Draw everything
         draw()
-        
+
         # Cap the frame rate
         clock.tick(60)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
