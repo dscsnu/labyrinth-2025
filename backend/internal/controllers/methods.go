@@ -29,3 +29,17 @@ func Post(next http.Handler) http.HandlerFunc {
 	}
 
 }
+
+func Patch(next http.Handler) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method != http.MethodPatch {
+			return
+		}
+
+		next.ServeHTTP(w, r)
+
+	}
+
+}
