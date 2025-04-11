@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"labyrinth/internal/router"
+	"labyrinth/internal/types"
+	"log/slog"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
@@ -80,6 +84,45 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
+	})
+
+}
+
+func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		query := r.URL.Query()
+		teamId := query.Get("team_id")
+		userId := query.Get("user_id")
+
+		if teamId == "" && userId == "" {
+			http.Error(w, "Either user_id or team_id must be provided", http.StatusBadRequest)
+			return
+		}
+
+		var team = types.Team{}
+		var err error
+
+		if teamId != "" {
+			team, err = rtr.State.DB.GetTeamByID(context.Background(), teamId)
+		} else if userId != "" {
+			parsedId, parseErr := uuid.Parse(userId)
+			if parseErr != nil {
+				http.Error(w, "invalid player_id format", http.StatusBadRequest)
+			}
+			team, err = rtr.State.DB.GetTeamByUserId(context.Background(), parsedId)
+		}
+
+		if err != nil {
+			rtr.Logger.Error("failed to fetch team", slog.String("error", err.Error()))
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(team); err != nil {
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		}
 	})
 
 }
