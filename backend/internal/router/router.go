@@ -25,10 +25,10 @@ func (r *Router) WithState(state *state.State) *Router {
 
 }
 
-func (r *Router) WithServerConfig(serverConfig ServerConfig) *Router {
+func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
-	r.SrvConfig = serverConfig
-	return r
+	res.Header().Set("Access-Control-Allow-Origin", "*")
+	r.ServeHTTP(res, req)
 
 }
 
