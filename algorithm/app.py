@@ -1,8 +1,10 @@
-import pygame
-import os
-import time
 import ast
+import json
+import os
 import shutil
+import time
+
+import pygame
 
 os.chdir(os.path.dirname(__file__))
 
@@ -235,6 +237,18 @@ def approve_current(now):
     
     # prints where the nodes are being assigned
     node_stack.append(left_nodes)
+    f = open("spell_patterns.json", "r")
+    data = json.load(f)
+    f.close()
+    data["valid_patterns"] += 1
+    data[right_name]["valid_patterns"] += 1
+    if right_name not in data:
+        data[right_name] = [left_nodes]
+    else:
+        data[right_name]["patterns"].append(left_nodes)
+    f = open("spell_patterns.json", "w")
+    f.write(json.dumps(data, indent=4))
+    f.close()
     print(f"{left_nodes} assigned to {right_name}")
     
     # Remember the current index before reloading
@@ -272,7 +286,18 @@ def reject_current(now):
 
     # prints that the nodes were rejected
     node_stack.append(left_nodes)
-    print(f"{left_nodes} rejected")
+    right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
+    f = open("spell_patterns.json", "r")
+    data = json.load(f)
+    f.close()
+    if right_name in data:
+        if left_nodes in data[right_name]:
+            data[right_name].remove(left_nodes)
+            if len(data[right_name]) == 0:
+                data.remove(right_name)
+    f = open("spell_patterns.json", "w")
+    f.write(json.dumps(data, indent=4))
+    f.close()
     
     # Remember the current index before reloading
     current_index = left_index
