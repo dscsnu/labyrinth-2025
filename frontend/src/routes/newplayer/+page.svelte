@@ -1,11 +1,12 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
-    import { setTeam } from "$lib/stores/TeamStore";
+    import { setTeam, type TeamData } from "$lib/stores/TeamStore";
     import { addToast } from "$lib/stores/ToastStore";
     import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte";
     import { LoadingStore } from "$lib/stores/LoadingStore";
     import { SupaStore, UserStore } from "$lib/stores/SupabaseStore";
+    import { onMount } from "svelte";
 
     let isCreating: boolean = $state(false);
     let loading: boolean = $state(false);
@@ -48,9 +49,18 @@
                 return;
             }
             const data = await res.json();
-
-            setTeam(data.team_id);
-            goto('/game');
+            
+            // Create a TeamData object with the response data
+            const teamData: TeamData = {
+                id: data.team_id,
+                name: teamName,  // Use the name provided by the user
+                isReady: false   // New teams start as not ready
+            };
+            
+            // Save the complete team data
+            setTeam(teamData);
+            
+            goto('/team');
         } catch (err) {
             console.error('Error creating team:', err);
             addToast({
@@ -100,8 +110,17 @@
                 return;
             }
 
-            // so we'll just use the team code as the ID
-            setTeam(teamCode);
+            // When joining, we might need to fetch team details
+            // If your API doesn't return team name, we can make another request
+            // or just use a placeholder
+            const teamData: TeamData = {
+                id: teamCode,
+                name: "Team " + teamCode.substring(0, 4), // Temporary name until we get real data
+                isReady: false
+            };
+            
+            // Save the complete team data
+            setTeam(teamData);
 
             // Redirect to team page
             goto('/team');
