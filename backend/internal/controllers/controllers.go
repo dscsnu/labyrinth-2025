@@ -8,7 +8,6 @@ import (
 )
 
 func HandleAll(rtr *router.Router) {
-
 	// GET Routes here
 	rtr.HandleFunc("/api", Get(DefaultHandler(rtr)))
 	rtr.HandleFunc("/api/createteam", middleware.Authorized(rtr, Post(TeamCreationHandler(rtr))))
