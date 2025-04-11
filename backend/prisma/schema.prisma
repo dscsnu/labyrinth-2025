@@ -57,7 +57,7 @@ model TeamMember {
 }
 
 model Level {
-  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             Int                   @id
   name           String
   description    String?
   imageUrl       String?               @map("image_url")
@@ -70,7 +70,7 @@ model Level {
 
 model TeamLevelAssignment {
   teamId       String  @map("team_id") @db.VarChar(6)
-  levelId      String  @map("level_id") @db.Uuid
+  levelId      Int     @map("level_id")
   sequence     Int
   currentScore Int     @default(0) @map("current_score")
   isFinished   Boolean @default(false) @map("is_finished")
@@ -86,9 +86,9 @@ model TeamLevelAssignment {
 model Spell {
   id              String                @id @default(dbgenerated("gen_random_uuid()")) @map("spell_id") @db.Uuid
   rewardScore     Int                   @map("reward_score")
-  numPoints       Int                   @map("num_points")
+  numVertex       Int                   @map("num_vertex")
   cooldown        Int
-  imageUrl        String?
+  imageUrl        String? @map("image_url")
   //
   pattern         Pattern[]
   teamAssignment  TeamSpellAssignment[]
@@ -99,7 +99,7 @@ model Spell {
 
 model Pattern {
   id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  numPoints Int                         @map("num_points")
+  numVertex Int                         @map("num_vertex")
   spellId   String                      @map("spell_id") @db.Uuid
   //
   spell     Spell                       @relation(fields: [spellId], references: [id])
