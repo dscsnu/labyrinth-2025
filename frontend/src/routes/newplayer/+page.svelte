@@ -5,6 +5,7 @@
     import { addToast } from "$lib/stores/ToastStore";
     import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte";
     import { LoadingStore } from "$lib/stores/LoadingStore";
+    import { SupaStore, UserStore } from "$lib/stores/SupabaseStore";
 
     let isCreating: boolean = $state(false);
     let loading: boolean = $state(false);
@@ -81,7 +82,6 @@
                     team_id: teamCode
                 }),
             });
-            console.log(res);
 
             if (!res.ok) {
                 if (res.status === 500 && res.statusText.includes("team is full")) {
@@ -115,6 +115,8 @@
             LoadingStore.set(false);
         }
     };
+
+    const handleSignOut = () => $SupaStore.auth.signOut()
 </script>
 
 
@@ -192,5 +194,13 @@
                 Need a new team? <button class={`text-purple-400 hover:underline`} onclick={toggleMode}>Create one</button>
             {/if}
         </div>
+
+        <div class={`flex flex-col justify-center items-center`}>
+            <p>{$UserStore?.email}</p>
+            <button onclick={handleSignOut} class={`border-2 rounded-lg p-2`}>
+                Sign Out
+            </button>
+        </div>
     </div>
+
 </main>
