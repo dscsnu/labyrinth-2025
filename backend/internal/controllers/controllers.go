@@ -17,6 +17,7 @@ func HandleAll(rtr *router.Router) {
 	rtr.HandleFunc("/api", Get(DefaultHandler(rtr)))
 	rtr.HandleFunc("/api/createteam", middleware.Authorized(rtr, Post(TeamCreationHandler(rtr))))
 	rtr.HandleFunc("/api/updateteam", middleware.Authorized(rtr, Post(TeamUpdateHandler(rtr))))
+	rtr.HandleFunc("/api/team", middleware.Authorized(rtr, Get(GetTeamHandler(rtr))))
 }
 
 func DefaultHandler(rtr *router.Router) http.HandlerFunc {
