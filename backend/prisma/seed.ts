@@ -96,13 +96,13 @@ async function createUserTriggers() {
 
 async function seedLevelTable() {
     const levels = [
-        { name: 'Ex 1', targetScore: 10 },
-        { name: 'Ex 2', targetScore: 20 },
-        { name: 'Ex 3', targetScore: 30 },
-        { name: 'Ex 4', targetScore: 40 },
-        { name: 'Ex 5', targetScore: 50 },
-        { name: 'Ex 6', targetScore: 60 },
-        { name: 'Ex 7', targetScore: 120 },
+        { id: 1, name: 'Ex 1', targetScore: 10 },
+        { id: 2, name: 'Ex 2', targetScore: 20 },
+        { id: 3, name: 'Ex 3', targetScore: 30 },
+        { id: 4, name: 'Ex 4', targetScore: 40 },
+        { id: 5, name: 'Ex 5', targetScore: 50 },
+        { id: 6, name: 'Ex 6', targetScore: 60 },
+        { id: 7, name: 'Ex 7', targetScore: 120 },
     ];
 
     await prisma.level.createMany({
@@ -112,18 +112,43 @@ async function seedLevelTable() {
 
 async function seedSpellTable() {
     const spells = [
-        { rewardScore: 10, numPoints: 2, cooldown: 1 },
-        { rewardScore: 20, numPoints: 3, cooldown: 2 },
-        { rewardScore: 30, numPoints: 3, cooldown: 2 },
-        { rewardScore: 30, numPoints: 3, cooldown: 2 },
-        { rewardScore: 40, numPoints: 4, cooldown: 3 },
-        { rewardScore: 40, numPoints: 4, cooldown: 3 },
-        { rewardScore: 50, numPoints: 4, cooldown: 3 },
-        { rewardScore: 100, numPoints: 8, cooldown: 5 },
+        { rewardScore: 10, numVertex: 2, cooldown: 1 },
+        { rewardScore: 20, numVertex: 3, cooldown: 2 },
+        { rewardScore: 30, numVertex: 3, cooldown: 2 },
+        { rewardScore: 30, numVertex: 3, cooldown: 2 },
+        { rewardScore: 40, numVertex: 4, cooldown: 3 },
+        { rewardScore: 40, numVertex: 4, cooldown: 3 },
+        { rewardScore: 50, numVertex: 4, cooldown: 3 },
+        { rewardScore: 100, numVertex: 8, cooldown: 5 },
     ];
 
     await prisma.spell.createMany({
         data: spells
+    });
+}
+
+async function seedLocationTable() {
+    const locationsWithoutId = [
+        { name: 'Tower 6 FruitShop', latitude: 0, longitude: 0 },
+        { name: 'Research Block', latitude: 0, longitude: 0 },
+        { name: 'A Block', latitude: 0, longitude: 0 },
+        { name: 'CnD Atrium', latitude: 0, longitude: 0 },
+        { name: 'G Block', latitude: 0, longitude: 0 },
+        { name: 'Shopping Arcade', latitude: 0, longitude: 0 },
+        { name: 'UAC', latitude: 0, longitude: 0 },
+        { name: 'Cluster 1', latitude: 0, longitude: 0 },
+        { name: 'Dibang Cycle Shop', latitude: 0, longitude: 0 },
+        { name: 'Dining Hall 3', latitude: 0, longitude: 0 },
+        { name: 'Indoor Sports Complex', latitude: 0, longitude: 0 },
+    ];
+
+    const locations = locationsWithoutId.map(l => {
+        const id = Math.floor(100000 + Math.random() * 900000).toString();
+        return { id, ...l }
+    });
+
+    await prisma.location.createMany({
+        data: locations
     });
 }
 
@@ -138,6 +163,10 @@ async function main() {
 
     await seedSpellTable()
         .then(() => console.log('✅ seeded Spell table'))
+        .catch((e) => console.error(`🚨 ${e}`));
+
+    await seedLocationTable()
+        .then(() => console.log('✅ seeded Location table'))
         .catch((e) => console.error(`🚨 ${e}`));
 }
 
