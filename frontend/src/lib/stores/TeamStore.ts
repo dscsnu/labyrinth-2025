@@ -1,15 +1,22 @@
 import { browser } from "$app/environment";
 import { getCookie } from "$lib/utils/getCookie";
-import { writable } from "svelte/store";
+import { writable, get } from "svelte/store";
 
 // Define team data structure
-interface TeamData {
+export interface TeamData {
     id: string;
     name: string;
-    isReady: boolean;
+    is_ready: boolean; // Indicates if the whole team is ready
+    members: Member[]; // List of team members
 }
 
-const TEAM_TOKEN_NAME = 'labyrinth-gdsc-team';
+export interface Member {
+    id: string;
+    name: string;
+    is_ready: boolean;
+}
+
+export const TEAM_TOKEN_NAME = 'labyrinth-gdsc-team';
 
 // Initialize from localStorage or cookies
 const getInitialTeamData = (): TeamData | null => {
@@ -38,10 +45,10 @@ const getInitialTeamData = (): TeamData | null => {
     return null;
 };
 
-const team = writable<TeamData | null>(getInitialTeamData());
+export const team = writable<TeamData | null>(getInitialTeamData());
 
 // Function to update team data
-const setTeam = (teamData: TeamData | null) => {
+export const setTeam = (teamData: TeamData | null) => {
     if (!browser) return;
 
     if (teamData) {
@@ -60,40 +67,55 @@ const setTeam = (teamData: TeamData | null) => {
     team.set(teamData);
 };
 
+// Function to update a specific player's ready status
+export const setPlayerReadyState = (playerId: string, isReady: boolean) => {
+    // Get the current state directly from the store
+    const currentData = get(team);
+    
+    if (currentData) {
+        // Update the specific player's ready state
+        const updatedMembers = currentData.members.map(member =>
+            member.id === playerId ? { ...member, is_ready: isReady } : member
+        );
+
+        // Check if all players are ready
+        const isAllReady = updatedMembers.every(member => member.is_ready);
+
+        // Update team ready status based on members' readiness
+        const updatedTeam = {
+            ...currentData,
+            members: updatedMembers,
+            is_ready: isAllReady, // The whole team is ready if all members are ready
+        };
+        
+        // Update the store
+        setTeam(updatedTeam);
+    }
+};
+
 // Helper function to check if user has a team
-const hasTeam = (): boolean => {
-    const teamData = getInitialTeamData();
+export const hasTeam = (): boolean => {
+    const teamData = get(team);
     return !!teamData?.id;
 };
 
 // Function to update specific team properties
-const updateTeam = (updates: Partial<TeamData>) => {
-    const currentData = getInitialTeamData();
+export const updateTeam = (updates: Partial<TeamData>) => {
+    const currentData = get(team);
     if (currentData) {
         setTeam({ ...currentData, ...updates });
     }
 };
 
 // Function to specifically update team ready status
-const setTeamReady = (isReady: boolean) => {
-    const currentData = getInitialTeamData();
+export const setTeamReady = (isReady: boolean) => {
+    const currentData = get(team);
     if (currentData) {
-        setTeam({ ...currentData, isReady });
+        setTeam({ ...currentData, is_ready: isReady });
     }
 };
 
 // Function to clear team data (e.g., when user logs out)
-const clearTeam = () => {
+export const clearTeam = () => {
     setTeam(null);
-};
-
-export {
-    team,
-    setTeam,
-    hasTeam,
-    clearTeam,
-    updateTeam,
-    setTeamReady,
-    TEAM_TOKEN_NAME,
-    type TeamData
 };
