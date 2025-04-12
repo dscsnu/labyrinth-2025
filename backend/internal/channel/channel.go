@@ -15,4 +15,29 @@ func NewChannel() *Channel {
 
 func (c *Channel) Start() {
 
+	for {
+
+		packet := <-c.Recv
+		if ok := handlePacket(packet); !ok {
+
+			break
+
+		}
+
+	}
+
+}
+
+func handlePacket(packet protocol.Packet) {
+
+	switch packet.Type {
+
+	case protocol.PacketTypeChannelState:
+
+	case protocol.PacketTypeBackground:
+
+	case protocol.PacketTypeGame:
+
+	}
+
 }
