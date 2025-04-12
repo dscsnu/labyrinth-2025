@@ -1,15 +1,60 @@
 package channel
 
-import "labyrinth/internal/protocol"
+import (
+	"labyrinth/internal/protocol"
+	"sync"
+)
+
+type ChannelPool struct {
+	mut   sync.Mutex
+	cpool map[string]*Channel
+}
+
+func NewChannelPool() *ChannelPool {
+
+	return &ChannelPool{cpool: map[string]*Channel{}}
+
+}
+
+func (c *ChannelPool) AddChannel(teamId string, channel *Channel) {
+
+	c.mut.Lock()
+	c.cpool[teamId] = channel
+	c.mut.Unlock()
+}
+
+func (c *ChannelPool) DeleteChannel(teamId string) {
+
+	c.mut.Lock()
+	delete(c.cpool, teamId)
+	c.mut.Unlock()
+}
+
+func (c *ChannelPool) GetChannel(teamId string) *Channel {
+
+	c.mut.Lock()
+	defer c.mut.Unlock()
+
+	return c.cpool[teamId]
+}
 
 type Channel struct {
 	Recv             <-chan protocol.Packet
-	BroadcastClients map[chan<- protocol.Packet]struct{}
+	BroadcastClients struct {
+		bc  map[chan<- protocol.Packet]struct{}
+		mut sync.Mutex
+	}
 }
 
 func NewChannel() *Channel {
 
-	return &Channel{Recv: make(<-chan protocol.Packet), BroadcastClients: map[chan<- protocol.Packet]struct{}{}}
+	return &Channel{Recv: make(<-chan protocol.Packet), BroadcastClients: struct {
+		bc  map[chan<- protocol.Packet]struct{}
+		mut sync.Mutex
+	}{
+
+		bc: map[chan<- protocol.Packet]struct{}{},
+	}}
 
 }
 
