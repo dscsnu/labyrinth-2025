@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"labyrinth/internal/channel"
 	"labyrinth/internal/controllers"
 	"labyrinth/internal/router"
 	"labyrinth/internal/state"
@@ -30,6 +31,7 @@ func Execute() {
 		WithServerConfig(router.ServerConfig{Host: host}).
 		WithState(state.NewState().
 			WithJwtSession([]byte(os.Getenv("JWT_SESSION_KEY"))).
+			WithChannelPool(channel.NewChannelPool()).
 			WithPostgresDriver(os.Getenv("POSTGRES_URL")),
 		)
 	controllers.HandleAll(r)
