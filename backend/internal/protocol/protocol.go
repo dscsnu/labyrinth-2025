@@ -16,17 +16,17 @@ type Packet struct {
 type BackgroundMessage struct{}
 
 func DecodeBackgroundMessage(msg []byte) (BackgroundMessage, error) {
-
+	return BackgroundMessage{}, nil
 }
 
 type ChannelStateMessage struct{}
 
 func DecodeChannelStateMessage(msg []byte) (ChannelStateMessage, error) {
-
+	return ChannelStateMessage{}, nil
 }
 
 type GameMessage struct{}
 
 func DecodeGameMessage(msg []byte) (GameMessage, error) {
-
+	return GameMessage{}, nil
 }
