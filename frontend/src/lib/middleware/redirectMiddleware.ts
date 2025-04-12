@@ -35,7 +35,7 @@ export const redirectMiddleware: Handle = async ({ event, resolve }) => {
     //     return redirect(303, '/finish');
     // }
 
-    
+
     // User authenticated but on landing page
     if (currentPath === '/') {
         // Redirect to team page if they have a team, otherwise to newplayer
@@ -64,7 +64,7 @@ export const redirectMiddleware: Handle = async ({ event, resolve }) => {
     // Game flow controls
     if (teamData?.id) {
 
-        // if (Game has started){
+        // if (Game has started && team.isReady) {
         //      return redirect(303, '/game');
         // }
         if (currentPath === '/game') {
