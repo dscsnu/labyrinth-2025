@@ -15,10 +15,9 @@ func NewChannel() *Channel {
 
 func (c *Channel) Start() {
 
-	for {
+	for packet := range c.Recv {
 
-		packet := <-c.Recv
-		if ok := handlePacket(packet); !ok {
+		if ok := c.handlePacket(packet); !ok {
 
 			break
 
@@ -28,16 +27,21 @@ func (c *Channel) Start() {
 
 }
 
-func handlePacket(packet protocol.Packet) {
+func (c *Channel) handlePacket(packet protocol.Packet) bool {
 
 	switch packet.Type {
 
 	case protocol.PacketTypeChannelState:
 
+		//channelStateMessage, err := protocol.DecodeChannelStateMessage(packet.Message)
+
 	case protocol.PacketTypeBackground:
+		//backgroundMessage, err := protocol.DecodeBackgroundMessage(packet.Message)
 
 	case protocol.PacketTypeGame:
+		//gameMessage, err := protocol.DecodeGameMessage(packet.Message)
 
 	}
 
+	return true
 }
