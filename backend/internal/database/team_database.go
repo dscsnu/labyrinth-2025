@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"labyrinth/internal/types"
+	"math/rand"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -111,4 +113,39 @@ func (pd *PostgresDriver) GetTeamByUserId(ctx context.Context, userId uuid.UUID)
 
 	return team, nil
 
+}
+
+func (pd *PostgresDriver) AssignLevelsToTeam(ctx context.Context, teamId string) error {
+
+	levelIds := shuffleLevelIds()
+
+	tx, err := pd.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	for seq, levelId := range levelIds {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO teamlevelassignment (team_id, level_id, sequence)
+			VALUES ($1, $2, $3)
+		`, teamId, levelId, seq)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+
+}
+
+func shuffleLevelIds() []int {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ids := []int{1, 2, 3, 4, 5, 6}
+	r.Shuffle(len(ids), func(i, j int) {
+		ids[i], ids[j] = ids[j], ids[i]
+	})
+	return append(ids, 7)
 }

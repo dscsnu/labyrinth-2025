@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"labyrinth/internal/controllers/middleware"
-	// "labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"log/slog"
 	"net/http"
