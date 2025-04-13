@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"labyrinth/internal/channel"
-	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
 	"log/slog"
@@ -43,6 +42,13 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, "error creating team in database", http.StatusInternalServerError)
 			rtr.Logger.Error("internal error creating team", "error", err.Error())
+			return
+		}
+
+		err = rtr.State.DB.AssignLevelsToTeam(context.Background(), teamId)
+		if err != nil {
+			http.Error(w, "error assigning levels to team", http.StatusInternalServerError)
+			rtr.Logger.Error("internal error assigning levels", "error", err.Error())
 			return
 		}
 
