@@ -1,6 +1,7 @@
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from "$env/static/public";
 import { TOKEN_NAME } from "$lib/stores/DeviceStore";
 import { createServerClient } from "@supabase/ssr";
+import redirectMiddleware from "$lib/middleware/redirectMiddleware";
 
 import { redirect, type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
@@ -57,20 +58,6 @@ const createSupabase: Handle = async ({ event, resolve }) => {
     });
 }
 
-const authGuard: Handle = async ({ event, resolve }) => {
-    const currentPath = event.url.pathname;
-
-    if (currentPath.startsWith('/api')) {
-        return resolve(event);
-    }
-
-    if (currentPath !== '/' && !event.locals.user) {
-        return redirect(303, '/');
-    }
-
-    return resolve(event);
-}
-
 const handleDevice: Handle = async({ event, resolve }) => {
     const response = await resolve(event, {
         transformPageChunk: ({ html }) => {
@@ -102,4 +89,4 @@ const handleDevice: Handle = async({ event, resolve }) => {
     return response;
 }
 
-export const handle: Handle = sequence(createSupabase, authGuard, handleDevice)
+export const handle: Handle = sequence(createSupabase, redirectMiddleware, handleDevice)
