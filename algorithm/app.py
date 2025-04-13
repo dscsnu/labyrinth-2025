@@ -374,6 +374,7 @@ def reject_current(now):
     action_stack.append(("rejected", left_index, target_path, left_path))
 
     # prints that the nodes were rejected
+    print(f"{left_nodes} was rejected")
     node_stack.append(left_nodes)
     right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
     file_exists = False
@@ -478,11 +479,11 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                with open("patterns_nodes.txt", "w") as f:
+                    f.write(str(left_nodelist))
 
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-                elif event.key == pygame.K_RETURN:
+                if event.key == pygame.K_RETURN:
                     approve_current(now)
                 elif event.key == pygame.K_LEFT and right_paths:
                     key_held_left = True
