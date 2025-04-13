@@ -312,6 +312,18 @@ def approve_current(now):
         data = json.load(f)
         f.close()
         data["valid_patterns"] += 1
+        keys = []
+        for key in data:
+            if key != "valid_patterns":
+                if list(left_nodes) in data[key]["patterns"]:
+                    keys.append(key)
+        for key in keys:
+            data[key]["patterns"].remove(list(left_nodes))
+            if len(data[key]["patterns"]) == 0:
+                data.pop(key, None)
+            else:
+                data[key]["valid_patterns"] -= 1
+            data["valid_patterns"] -= 1
     else:
         data = {}
         data["valid_patterns"] = 1
@@ -375,10 +387,10 @@ def reject_current(now):
         data = json.load(f)
         f.close()
         if right_name in data:
-            if left_nodes in data[right_name]:
-                data[right_name].remove(left_nodes)
-                if len(data[right_name]) == 0:
-                    data.remove(right_name)
+            if list(left_nodes) in data[right_name]["patterns"]:
+                data[right_name]["patterns"].remove(list(left_nodes))
+                if len(data[right_name]["patterns"]) == 0:
+                    data.pop(right_name, None)
                 else:
                     data[right_name]["valid_patterns"] -= 1
                 data["valid_patterns"] -= 1
