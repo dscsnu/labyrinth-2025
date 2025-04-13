@@ -38,7 +38,6 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	cors.AllowAll().HandlerFunc(res, req)
 	r.ServeMux.ServeHTTP(res, req)
-
 }
 
 func (r *Router) Run() error {
