@@ -58,6 +58,14 @@ func NewChannel() *Channel {
 
 }
 
+func (c *Channel) AddMember(memberChannel chan<- protocol.Packet) {
+
+	c.BroadcastClients.mut.Lock()
+	c.BroadcastClients.bc[memberChannel] = struct{}{}
+	c.BroadcastClients.mut.Unlock()
+
+}
+
 func (c *Channel) Start() {
 
 	for packet := range c.Recv {

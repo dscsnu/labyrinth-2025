@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"labyrinth/internal/controllers/middleware"
+	// "labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"log/slog"
 	"net/http"
@@ -18,6 +19,8 @@ func HandleAll(rtr *router.Router) {
 	rtr.HandleFunc("/api/createteam", middleware.Authorized(rtr, Post(TeamCreationHandler(rtr))))
 	rtr.HandleFunc("/api/updateteam", middleware.Authorized(rtr, Post(TeamUpdateHandler(rtr))))
 	rtr.HandleFunc("/api/team", middleware.Authorized(rtr, Get(GetTeamHandler(rtr))))
+	rtr.HandleFunc("/api/eventlistener", middleware.Authorized(rtr, TeamChannelEventHandler(rtr)))
+
 }
 
 func DefaultHandler(rtr *router.Router) http.HandlerFunc {
@@ -29,6 +32,33 @@ func DefaultHandler(rtr *router.Router) http.HandlerFunc {
 			rtr.Logger.Error("error serving /api", slog.Attr{Key: "error", Value: slog.StringValue(err.Error())})
 
 		}
+
+	})
+
+}
+
+func TeamChannelEventHandler(rtr *router.Router) http.HandlerFunc {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// get team id through db calls
+		// teamChannel := rtr.State.ChanPool.GetChannel(teamId)
+		// listenerChannel := make(chan protocol.Packet)
+		// teamChannel.AddMember(listenerChannel)
+
+		// flusher, ok := w.(http.Flusher)
+		// if !ok {
+
+		// 	http.Error(w, "Could not create flusher", http.StatusInternalServerError)
+		// 	return
+
+		// }
+
+		// for eventMessage := range listenerChannel {
+
+		// 	w.Write(something)
+		// 	flusher.Flush()
+		// }
 
 	})
 
