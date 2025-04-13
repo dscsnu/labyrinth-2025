@@ -1,25 +1,25 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+     import { onMount } from 'svelte';
     import { fetchWithAuth } from '$lib/utils/fetchWithAuth';
-    import { team as teamStore, setPlayerReadyState, setTeam, type TeamData } from '$lib/stores/TeamStore';
+    import { team, setPlayerReadyState, setTeam,type ITeamData  } from '$lib/stores/TeamStore';
     import { addToast } from '$lib/stores/ToastStore';
     import { goto } from '$app/navigation';
     import { LoadingStore } from '$lib/stores/LoadingStore';
 
-    let teamId = $state("810699"); // Using $state for reactive variables
-    let team = $state<TeamData | null >(null);
-    let teamData = $derived($teamStore); // Using $derived instead of reactive statement
+    // let teamId = $state("810699"); // Using $state for reactive variables
+    // let team = $state<ITeamData | null >(null);
+    let teamData = $derived($team); // Using $derived instead of reactive statement
 
     const fetchTeamDetails = async () => {
-        if (!teamId) {
-            addToast({ message: 'No team ID found.', type: 'warning' });
+        if (!$team) {
+            addToast({ message: 'No team found.', type: 'warning' });
             goto('/');
             return;
         }
 
         LoadingStore.set(true);
         try {
-            const res = await fetchWithAuth(`api/team?team_id=${teamId}`, {
+            const res = await fetchWithAuth(`api/team?team_id=${$team.id}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,15 +34,14 @@
                 return;
             }
 
-            team = await res.json();
-            console.log('Fetched team:', team);
-            
-            if (team) {
+            const data = await res.json();
+
+            if (data) {
                 setTeam({
-                    id: teamId,
-                    name: team.name,
-                    is_ready: team.is_ready ?? false,
-                    members: team.members ?? []
+                    id: data.id,
+                    name: data.name,
+                    is_ready: data.is_ready ?? false,
+                    members: data.members ?? []
                 });
             }
         } catch (err) {
@@ -53,16 +52,15 @@
         }
     };
 
-    // Using the new lifecycle syntax
-    $effect(() => {
+    onMount(() => {
         fetchTeamDetails();
-    });
+    })
 
     const togglePlayerReadyState = (playerId: string, currentIsReady: boolean) => {
         setPlayerReadyState(playerId, !currentIsReady);
-        addToast({ 
-            message: `Player status ${!currentIsReady ? 'Ready' : 'Not Ready'} updated!`, 
-            type: 'success' 
+        addToast({
+            message: `Player status ${!currentIsReady ? 'Ready' : 'Not Ready'} updated!`,
+            type: 'success'
         });
     };
 </script>
