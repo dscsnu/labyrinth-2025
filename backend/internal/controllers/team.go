@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"labyrinth/internal/channel"
+	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
 	"log/slog"
@@ -43,6 +45,14 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 			rtr.Logger.Error("internal error creating team", "error", err.Error())
 			return
 		}
+
+		teamChannel := channel.NewChannel()
+		rtr.State.ChanPool.AddChannel(teamId, teamChannel)
+
+		creatorChannel := make(chan protocol.Packet)
+		teamChannel.AddMember(creatorChannel)
+
+		go teamChannel.Start()
 
 		json.NewEncoder(w).Encode(map[string]string{
 			"team_id": teamId,
