@@ -49,9 +49,6 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		teamChannel := channel.NewChannel()
 		rtr.State.ChanPool.AddChannel(teamId, teamChannel)
 
-		creatorChannel := make(chan protocol.Packet)
-		teamChannel.AddMember(creatorChannel)
-
 		go teamChannel.Start()
 
 		json.NewEncoder(w).Encode(map[string]string{
