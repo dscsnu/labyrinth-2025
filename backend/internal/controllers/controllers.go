@@ -16,6 +16,7 @@ func HandleAll(rtr *router.Router) {
 	// GET Routes here
 	rtr.HandleFunc("/api", Get(DefaultHandler(rtr)))
 	rtr.HandleFunc("/api/team", middleware.Authorized(rtr, Get(GetTeamHandler(rtr))))
+	rtr.HandleFunc("/api/game", Get(GameConfigHandler(rtr)))
 
 	// POST Routes
 	rtr.HandleFunc("/api/user/status", middleware.Authorized(rtr, Post(TeamMemberStatusUpdateHandler(rtr))))
