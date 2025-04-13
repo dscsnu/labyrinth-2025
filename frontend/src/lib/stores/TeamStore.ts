@@ -3,14 +3,14 @@ import { getCookie } from "$lib/utils/getCookie";
 import { writable, get } from "svelte/store";
 
 // Define team data structure
-interface TeamData {
+export interface ITeamData {
     id: string;
     name: string;
     is_ready: boolean; // Indicates if the whole team is ready
-    members: Member[]; // List of team members
+    members: IMember[]; // List of team members
 }
 
-interface Member {
+export interface IMember {
     id: string;
     name: string;
     is_ready: boolean;
@@ -19,7 +19,7 @@ interface Member {
 const TEAM_TOKEN_NAME = 'labyrinth-gdsc-team';
 
 // Initialize from localStorage or cookies
-const getInitialTeamData = (): TeamData | null => {
+const getInitialTeamData = (): ITeamData | null => {
     if (!browser) return null;
 
     // Try local storage first
@@ -45,10 +45,10 @@ const getInitialTeamData = (): TeamData | null => {
     return null;
 };
 
-const team = writable<TeamData | null>(getInitialTeamData());
+const TeamStore = writable<ITeamData | null>(getInitialTeamData());
 
 // Function to update team data
-const setTeam = (teamData: TeamData | null) => {
+const setTeam = (teamData: ITeamData | null) => {
     if (!browser) return;
 
     if (teamData) {
@@ -64,13 +64,13 @@ const setTeam = (teamData: TeamData | null) => {
         document.cookie = `${TEAM_TOKEN_NAME}=null;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
     }
 
-    team.set(teamData);
+    TeamStore.set(teamData);
 };
 
 // Function to update a specific player's ready status
 const setPlayerReadyState = (playerId: string, isReady: boolean) => {
     // Get the current state directly from the store
-    const currentData = get(team);
+    const currentData = get(TeamStore);
     
     if (currentData) {
         // Update the specific player's ready state
@@ -95,13 +95,13 @@ const setPlayerReadyState = (playerId: string, isReady: boolean) => {
 
 // Helper function to check if user has a team
 const hasTeam = (): boolean => {
-    const teamData = get(team);
+    const teamData = get(TeamStore);
     return !!teamData?.id;
 };
 
 // Function to update specific team properties
-const updateTeam = (updates: Partial<TeamData>) => {
-    const currentData = get(team);
+const updateTeam = (updates: Partial<ITeamData>) => {
+    const currentData = get(TeamStore);
     if (currentData) {
         setTeam({ ...currentData, ...updates });
     }
@@ -109,7 +109,7 @@ const updateTeam = (updates: Partial<TeamData>) => {
 
 // Function to specifically update team ready status
 const setTeamReady = (isReady: boolean) => {
-    const currentData = get(team);
+    const currentData = get(TeamStore);
     if (currentData) {
         setTeam({ ...currentData, is_ready: isReady });
     }
@@ -121,7 +121,7 @@ const clearTeam = () => {
 };
 
 export {
-    team,
+    TeamStore as team,
     setTeam,
     setPlayerReadyState,
     hasTeam,
@@ -129,5 +129,4 @@ export {
     updateTeam,
     setTeamReady,
     TEAM_TOKEN_NAME,
-    type TeamData
 };

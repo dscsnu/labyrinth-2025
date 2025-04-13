@@ -1,12 +1,9 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
-    import { setTeam, type TeamData } from "$lib/stores/TeamStore";
+    import { setTeam, type ITeamData } from "$lib/stores/TeamStore";
     import { addToast } from "$lib/stores/ToastStore";
-    import {
-        validateInput,
-        ValidationOptions,
-    } from "$lib/directives/validateInput.svelte";
+    import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte";
     import { LoadingStore } from "$lib/stores/LoadingStore";
     import { SupaStore, UserStore } from "$lib/stores/SupabaseStore";
 
@@ -55,7 +52,7 @@
             const data = await res.json();
 
             // Create a TeamData object with the response data
-            const teamData: TeamData = {
+            const teamData: ITeamData = {
                 id: data.team_id,
                 name: teamName, // Use the name provided by the user
                 is_ready: false, // New teams start as not ready
@@ -123,7 +120,7 @@
             // Parse the team data from the response
             const teamResponse = await res.json();
             // Create TeamData object using the response from backend
-            const teamData: TeamData = {
+            const teamData: ITeamData = {
                 id: teamResponse.id || teamCode,
                 name: teamResponse.name || "Team " + teamCode.substring(0, 4),
                 is_ready: teamResponse.is_ready || false,
