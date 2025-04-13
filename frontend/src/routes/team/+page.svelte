@@ -7,7 +7,7 @@
     import { LoadingStore } from '$lib/stores/LoadingStore';
 
     let teamId = $state("810699"); // Using $state for reactive variables
-    let team = $state<any>(null);
+    let team = $state<TeamData | null >(null);
     let teamData = $derived($teamStore); // Using $derived instead of reactive statement
 
     const fetchTeamDetails = async () => {
@@ -67,24 +67,24 @@
     };
 </script>
 
-<main class="p-8">
-    <h1 class="text-2xl font-bold mb-4">Team Details</h1>
+<main class={`p-8`}>
+    <h1 class={`text-2xl font-bold mb-4`}>Team Details</h1>
 
     {#if teamData}
-        <h2 class="text-lg">Team: {teamData.name}</h2>
+        <h2 class={`text-lg`}>Team: {teamData.name}</h2>
         
         {#if teamData.is_ready}
-            <p class="text-green-500 font-bold mt-4">Everyone is ready!</p>
+            <p class={`text-green-500 font-bold mt-4`}>Everyone is ready!</p>
         {/if}
 
-        <ul class="list-disc list-inside mt-2">
+        <ul class={`list-disc list-inside mt-2`}>
             {#each teamData.members as member}
-                <li class="flex items-center space-x-2">
+                <li class={`flex items-center space-x-2`}>
                     <span>{member.name}</span>
                     <span>{member.is_ready ? '✅ Ready' : '❌ Not Ready'}</span>
                     <button
                         onclick={() => togglePlayerReadyState(member.id, member.is_ready)}
-                        class="ml-2 px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-400"
+                        class={`ml-2 px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-400`}
                     >
                         {member.is_ready ? 'Mark Not Ready' : 'Mark Ready'}
                     </button>
@@ -92,6 +92,6 @@
             {/each}
         </ul>
     {:else}
-        <p class="text-gray-500">Loading team info...</p>
+        <p class={`text-gray-500`}>Loading team info...</p>
     {/if}
 </main>
