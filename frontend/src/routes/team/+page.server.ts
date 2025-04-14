@@ -15,8 +15,8 @@ export const load: PageServerLoad = async ({ cookies }) => {
     let teamData
     try {
         teamData = JSON.parse(decodeURIComponent(teamCookie));
-        // Check if team is ready
-        if (teamData.isReady) {
+        // Check if team is ready and game start
+        if (teamData.isReady) { //game start remaining
             throw redirect(303, '/game');
         }
     } catch (e) {
