@@ -12,6 +12,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// TeamCreationHandler creates a new team and assigns default levels.
+//
+//	@Summary		Create Team
+//	@Description	Creates a new team using the provided team name and returns the generated team ID. Also assigns default levels and initializes a communication channel.
+//	@Tags			Team
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		object{team_name=string}	true	"Payload containing the team name"
+//	@Success		200		{object}	object{team_id=string}		"The generated team ID"
+//	@Failure		400		{object}	object{error=string}		"Bad Request"
+//	@Failure		500		{object}	object{error=string}		"Internal Server Error"
+//	@Security		BearerAuth
+//	@Router			/api/createteam [post]
 func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +37,11 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 
-			http.Error(w, "error reading teamName field, invalid json payload", http.StatusBadRequest)
+			//http.Error(w, "error reading teamName field, invalid json payload", http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "error reading tean_name field, invalid json payload",
+			})
 			return
 
 		}
@@ -32,7 +49,11 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		profile, err := rtr.State.DB.GetUser(context.Background(), userEmail)
 		if err != nil {
 
-			http.Error(w, "internal error occurred", http.StatusInternalServerError)
+			//http.Error(w, "internal error occurred", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
 			rtr.Logger.Error("internal error", "error ", err.Error())
 			return
 
@@ -40,14 +61,22 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 		teamId, err := rtr.State.DB.CreateTeam(context.Background(), t.TeamName, profile.ID)
 		if err != nil {
-			http.Error(w, "error creating team in database", http.StatusInternalServerError)
+			//http.Error(w, "error creating team in database", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
 			rtr.Logger.Error("internal error creating team", "error", err.Error())
 			return
 		}
 
 		err = rtr.State.DB.AssignLevelsToTeam(context.Background(), teamId)
 		if err != nil {
-			http.Error(w, "error assigning levels to team", http.StatusInternalServerError)
+			//http.Error(w, "error assigning levels to team", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
 			rtr.Logger.Error("internal error assigning levels", "error", err.Error())
 			return
 		}
@@ -65,6 +94,18 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 }
 
+// TeamUpdateHandler adds members to a specified team
+//
+//	@Summary		Add member to team
+//	@Description	Adds members to the team specified in the payload
+//	@Tags			Team
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		object{team_id=string}	true	"Payload containing the id of the team to join"
+//	@Success		200		{object}	types.Team				"Updated team the member is added to"
+//	@Failure		400		{object}	object{error=string}	"Bad request"
+//	@Failure		500		{object}	object{error=string}	"Internal Server Error"
+//	@Router			/api/updateteam [post]
 func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
