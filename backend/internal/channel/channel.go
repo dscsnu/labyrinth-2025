@@ -104,6 +104,7 @@ func (c *Channel) handlePacket(packet protocol.Packet) bool {
 				broadcastClient <- packet
 
 			}
+			c.BroadcastClients.mut.Unlock()
 
 		}
 
