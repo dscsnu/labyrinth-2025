@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
+import { JWT_SESSION_KEY } from "$env/static/private";
 
 export async function POST({ request }) {
     try {
@@ -15,7 +16,6 @@ export async function POST({ request }) {
             timestamp: currentTime
         };
 
-        const JWT_SESSION_KEY = process.env.JWT_SESSION_KEY;
 
         const token = jwt.sign(tokenData, JWT_SESSION_KEY, {
             expiresIn: '1h'

@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
+import { JWT_SESSION_KEY } from "$env/static/private";
 
 export async function POST({ request }) {
     try {
@@ -8,9 +9,10 @@ export async function POST({ request }) {
             throw error(400, 'Token is required');
         }
 
-        const JWT_SESSION_KEY = process.env.JWT_SESSION_KEY;
-
-        const decoded = jwt.verify(data.token, JWT_SESSION_KEY);
+        const decoded = jwt.verify(data.token, JWT_SESSION_KEY) as {
+            payload: string;
+            timestamp: number;
+        };
         let valid = false;
         let validTime = 5; //in seconds
         if (decoded && decoded.payload && decoded.timestamp) {
