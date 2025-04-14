@@ -52,7 +52,6 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 		go teamChannel.Start()
 
-		teamChannel.Broadcast(protocol.Packet{Type: "ChannelStateMessage", ChannelStateMessage: protocol.ChannelStateMessage{Relay: fmt.Sprintf("teamId: %s channel created", teamId), MsgContext: "channel_creation"}})
 		json.NewEncoder(w).Encode(map[string]string{
 			"team_id": teamId,
 		})
@@ -98,6 +97,9 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			http.Error(w, "error fetching the team", http.StatusInternalServerError)
 			rtr.Logger.Error("internal error while getting team", "error", err.Error())
 		}
+
+		teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
+		teamChannel.Broadcast(protocol.Packet{Type: "BackgroundMessage", BackgroundMessage: protocol.BackgroundMessage{Relay: fmt.Sprintf("teamId:%s -> %s joined the team", team.ID, profile.Email), MsgContext: "channel_creation"}})
 
 		if err := json.NewEncoder(w).Encode(team); err != nil {
 			http.Error(w, "error encoding response", http.StatusInternalServerError)
