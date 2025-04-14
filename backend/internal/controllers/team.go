@@ -3,7 +3,9 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"labyrinth/internal/channel"
+	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
 	"log/slog"
@@ -50,6 +52,7 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 		go teamChannel.Start()
 
+		teamChannel.Broadcast(protocol.Packet{Type: "ChannelStateMessage", ChannelStateMessage: protocol.ChannelStateMessage{Relay: fmt.Sprintf("teamId: %s channel created", teamId), MsgContext: "channel_creation"}})
 		json.NewEncoder(w).Encode(map[string]string{
 			"team_id": teamId,
 		})
