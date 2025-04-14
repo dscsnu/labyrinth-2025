@@ -1,4 +1,4 @@
-import { TEAM_TOKEN_NAME } from "$lib/stores/TeamStore";
+import { TOKEN_NAME } from "$lib/stores/TeamStore";
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
