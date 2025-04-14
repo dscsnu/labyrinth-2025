@@ -382,21 +382,28 @@ def reject_current(now):
 
     left_filename = left_files[left_index]
     left_path = left_paths[left_index]
-    target_path = os.path.join(REJECTED_FOLDER, left_filename)
     left_nodes = left_nodelist[left_index]
     left_nodelist.pop(0)
 
-    # Move instead of copy
+    is_triangle = isinstance(left_nodes, tuple) and len(left_nodes) == 3
+    triangle_key = "triangle"
+
+    # Folder routing
+    if is_triangle:
+        target_dir = os.path.join(OUTPUT_FOLDER, triangle_key)
+    else:
+        target_dir = REJECTED_FOLDER
+
+    os.makedirs(target_dir, exist_ok=True)
+    target_path = os.path.join(target_dir, left_filename)
+
     shutil.move(left_path, target_path)
     action_stack.append(("rejected", left_index, target_path, left_path))
     node_stack.append(left_nodes)
 
     print(f"{left_nodes} was rejected")
 
-    triangle_key = "triangle"
-    is_triangle = isinstance(left_nodes, tuple) and len(left_nodes) == 3
-
-    # Load or initialize spell_patterns.json
+    # --- spell_patterns.json ---
     try:
         with open("spell_patterns.json", "r") as f:
             data = json.load(f)
@@ -424,7 +431,7 @@ def reject_current(now):
     with open("spell_patterns.json", "w") as f:
         json.dump(data, f, indent=4)
 
-    # Also save to patterns_by_spell/triangle.json if it's a triangle
+    # --- patterns_by_spell/triangle.json ---
     if is_triangle:
         triangle_json_path = os.path.join("patterns_by_spell", f"{triangle_key}.json")
         os.makedirs("patterns_by_spell", exist_ok=True)
@@ -441,18 +448,25 @@ def reject_current(now):
         with open(triangle_json_path, "w") as tf:
             json.dump(triangle_data, tf, indent=4)
 
-    # Remember the current index before reloading
+    # --- rejected.json (ONLY non-triangle patterns) ---
+    if not is_triangle:
+        rejected_json_path = os.path.join("rejected.json")
+        try:
+            with open(rejected_json_path, "r") as rj:
+                rejected_data = json.load(rj)
+        except FileNotFoundError:
+            rejected_data = {"rejected_patterns": []}
+
+        if list(left_nodes) not in rejected_data["rejected_patterns"]:
+            rejected_data["rejected_patterns"].append(list(left_nodes))
+
+        with open(rejected_json_path, "w") as rj:
+            json.dump(rejected_data, rj, indent=4)
+
+    # --- Finalization ---
     current_index = left_index
-
-    # After moving, reload the image list
     reload_images()
-
-    # Stay at the same index after removing, unless we're at the end
-    if current_index >= len(left_paths):
-        left_index = max(0, len(left_paths) - 1)
-    else:
-        left_index = current_index
-
+    left_index = max(0, len(left_paths) - 1) if current_index >= len(left_paths) else current_index
     approval_time = now
     message_text = "Rejected!"
     message_color = RED
@@ -463,33 +477,93 @@ def go_back(now):
     global left_index, approval_time, show_message, message_text, message_color
     if action_stack:
         action, index, target_path, original_path = action_stack.pop()
+        node = node_stack.pop()
+        left_nodelist.insert(0, node)  # Restore the node
+        print(f"{node} was retrieved")
 
-        # adds the nodes back to the original list
-        left_nodelist.insert(0, node_stack.pop())
-
-        print(f"{left_nodelist[0]} was retrieved")
+        # Restore the image file
         if os.path.exists(target_path):
-            # Make sure the directory exists
             os.makedirs(os.path.dirname(original_path), exist_ok=True)
-            # Move the file back to its original location
             shutil.move(target_path, original_path)
-
-            # Reload images after moving it back
             reload_images()
 
-            # Find the index of the restored file
             try:
                 restored_filename = os.path.basename(original_path)
                 restored_index = left_files.index(restored_filename)
                 left_index = restored_index
             except ValueError:
-                # If for some reason we can't find the file, just stay at current index
                 pass
 
-            approval_time = now
-            message_text = "Undone"
-            message_color = GRAY
-            show_message = True
+        # Load spell_patterns.json
+        try:
+            with open("spell_patterns.json", "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {"valid_patterns": 0}
+
+        node_list = list(node)
+
+        if action == "approved":
+            try:
+                spell_name = os.path.basename(os.path.dirname(target_path))
+            except IndexError:
+                spell_name = None
+
+            if spell_name and spell_name in data:
+                if node_list in data[spell_name]["patterns"]:
+                    data[spell_name]["patterns"].remove(node_list)
+                    data[spell_name]["valid_patterns"] -= 1
+                    data["valid_patterns"] -= 1
+                    if data[spell_name]["valid_patterns"] == 0:
+                        del data[spell_name]
+
+                spell_json_path = os.path.join("patterns_by_spell", f"{spell_name}.json")
+                if os.path.exists(spell_json_path):
+                    with open(spell_json_path, "r") as sf:
+                        spell_data = json.load(sf)
+                    if node_list in spell_data:
+                        spell_data.remove(node_list)
+                    with open(spell_json_path, "w") as sf:
+                        json.dump(spell_data, sf, indent=4)
+
+        elif action == "rejected":
+            is_triangle = isinstance(node, tuple) and len(node) == 3
+            triangle_key = "triangle"
+
+            if is_triangle and triangle_key in data:
+                if node_list in data[triangle_key]["patterns"]:
+                    data[triangle_key]["patterns"].remove(node_list)
+                    data[triangle_key]["valid_patterns"] -= 1
+                    data["valid_patterns"] -= 1
+                    if data[triangle_key]["valid_patterns"] == 0:
+                        del data[triangle_key]
+
+                triangle_json_path = os.path.join("patterns_by_spell", f"{triangle_key}.json")
+                if os.path.exists(triangle_json_path):
+                    with open(triangle_json_path, "r") as tf:
+                        triangle_data = json.load(tf)
+                    if node_list in triangle_data:
+                        triangle_data.remove(node_list)
+                    with open(triangle_json_path, "w") as tf:
+                        json.dump(triangle_data, tf, indent=4)
+
+            # Remove from rejected.json
+            rejected_json_path = os.path.join("rejected.json")
+            if os.path.exists(rejected_json_path):
+                with open(rejected_json_path, "r") as rj:
+                    rejected_data = json.load(rj)
+                if node_list in rejected_data["rejected_patterns"]:
+                    rejected_data["rejected_patterns"].remove(node_list)
+                with open(rejected_json_path, "w") as rj:
+                    json.dump(rejected_data, rj, indent=4)
+
+        with open("spell_patterns.json", "w") as f:
+            json.dump(data, f, indent=4)
+
+        approval_time = now
+        message_text = "Undone"
+        message_color = GRAY
+        show_message = True
 
 
 # --- Main Loop ---
