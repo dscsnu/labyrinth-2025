@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"labyrinth/internal/channel"
-	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
 	"log/slog"
