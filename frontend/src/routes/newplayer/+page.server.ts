@@ -4,7 +4,7 @@ import type { PageServerLoad } from "./$types";
 
 // @ts-ignore
 export const load: PageServerLoad = async ({ cookies }) => {
-    const teamCookie = cookies.get(TEAM_TOKEN_NAME);
+    const teamCookie = cookies.get(TOKEN_NAME);
 
     // If they already have a team, redirect to team page
     if (teamCookie) {
@@ -17,9 +17,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
             throw redirect(303, '/team');
         } catch (e) {
             console.error('Failed to parse team cookie:', e);
-            cookies.delete(TEAM_TOKEN_NAME, { path: '/' });
+            cookies.delete(TOKEN_NAME, { path: '/' });
         }
     }
-
-    return {};
 };

@@ -2,7 +2,7 @@ import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from "$env/static/publi
 import { createServerClient } from "@supabase/ssr";
 import type { Handle } from "@sveltejs/kit";
 
-export const createSupabase: Handle = async ({ event, resolve }) => {
+const createSupabase: Handle = async ({ event, resolve }) => {
     event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
         cookies: {
             getAll() {
@@ -53,3 +53,5 @@ export const createSupabase: Handle = async ({ event, resolve }) => {
         },
     });
 }
+
+export default createSupabase;
