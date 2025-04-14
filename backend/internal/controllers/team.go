@@ -152,6 +152,19 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 }
 
+// GetTeamHandler returns the team from a given team ID or for a given user ID
+//
+//	@Summary		Get team info
+//	@Description	Gets the team info, using either team ID or user ID
+//	@Tags			Team
+//	@Accept			json
+//	@Produce		json
+//	@Param			team_id	query		string					false	"ID of the team"
+//	@Param			user_id	query		string					false	"ID of a user belonging to the team"
+//	@Success		200		{object}	types.Team				"Team retrieved successfully"
+//	@Failure		400		{object}	object{error=string}	"Bad request"
+//	@Failure		500		{object}	object{error=string}	"Internal server error"
+//	@Router			/api/tean [get]
 func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +174,11 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 		userId := query.Get("user_id")
 
 		if teamId == "" && userId == "" {
-			http.Error(w, "Either user_id or team_id must be provided", http.StatusBadRequest)
+			//http.Error(w, "Either user_id or team_id must be provided", http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "either used_id or team_id not provided",
+			})
 			return
 		}
 
@@ -173,19 +190,31 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 		} else if userId != "" {
 			parsedId, parseErr := uuid.Parse(userId)
 			if parseErr != nil {
-				http.Error(w, "invalid player_id format", http.StatusBadRequest)
+				//http.Error(w, "invalid player_id format", http.StatusBadRequest)
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "player id format is invalid, should be uuid string",
+				})
 			}
 			team, err = rtr.State.DB.GetTeamByUserId(context.Background(), parsedId)
 		}
 
 		if err != nil {
 			rtr.Logger.Error("failed to fetch team", slog.String("error", err.Error()))
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			//http.Error(w, "internal server error", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
 			return
 		}
 
 		if err := json.NewEncoder(w).Encode(team); err != nil {
-			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
+			//http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		}
 	})
 
