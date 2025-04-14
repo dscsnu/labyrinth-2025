@@ -55,7 +55,7 @@
             const teamData: ITeamData = {
                 id: data.team_id,
                 name: teamName, // Use the name provided by the user
-                is_ready: false, // New teams start as not ready
+                allReady: false, // New teams start as not ready
                 members: [], // Initialize with an empty array of members
             };
 
@@ -123,7 +123,7 @@
             const teamData: ITeamData = {
                 id: teamResponse.id || teamCode,
                 name: teamResponse.name || "Team " + teamCode.substring(0, 4),
-                is_ready: teamResponse.is_ready || false,
+                allReady: teamResponse.is_ready || false,
                 members: teamResponse.members || [],
             };
 
