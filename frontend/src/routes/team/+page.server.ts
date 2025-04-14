@@ -2,7 +2,7 @@ import { TEAM_TOKEN_NAME } from "$lib/stores/TeamStore";
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
-//@ts-ignore
+// @ts-ignore
 export const load: PageServerLoad = async ({ cookies }) => {
     const teamCookie = cookies.get(TEAM_TOKEN_NAME);
 
