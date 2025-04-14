@@ -17,10 +17,16 @@ type Packet struct {
 	Message []byte
 }
 
+type BackgroundMessageContext int
+
+const (
+	JoinBackgroundMessageContext BackgroundMessageContext = iota
+	LeaveBackgroundMessageContext
+)
+
 type BackgroundMessage struct {
-
-	// background message fields
-
+	Message    [128]byte
+	MsgContext BackgroundMessageContext
 }
 
 func DecodeBackgroundMessage(msg []byte) (BackgroundMessage, error) {
