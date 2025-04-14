@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
             throw redirect(303, '/team');
         } catch (e) {
             console.error('Failed to parse team cookie:', e);
-            cookies.delete(TEAM_TOKEN_NAME, { path: '/' });
+            cookies.delete(TEAM_TOKEN_NAME, { path: '/newplayer' });
         }
     }
 
