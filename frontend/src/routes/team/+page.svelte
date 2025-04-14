@@ -1,0 +1,91 @@
+<script lang="ts">
+     import { onMount } from 'svelte';
+    import { fetchWithAuth } from '$lib/utils/fetchWithAuth';
+    import { TeamStore, setPlayerReadyState, setTeam } from '$lib/stores/TeamStore';
+    import { addToast } from '$lib/stores/ToastStore';
+    import { goto } from '$app/navigation';
+    import { LoadingStore } from '$lib/stores/LoadingStore';
+
+    const fetchTeamDetails = async () => {
+        if (!$TeamStore) {
+            addToast({ message: 'No team found.', type: 'warning' });
+            goto('/');
+            return;
+        }
+
+        LoadingStore.set(true);
+        try {
+            const res = await fetchWithAuth(`api/team?team_id=${$TeamStore.id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const message = errorData.message || 'Failed to fetch team details.';
+                addToast({ message, type: 'danger' });
+                goto('/');
+                return;
+            }
+
+            const data = await res.json();
+
+            if (data) {
+                setTeam({
+                    id: data.id,
+                    name: data.name,
+                    allReady: data.is_ready ?? false,
+                    members: data.members ?? []
+                });
+            }
+        } catch (err) {
+            console.error('Fetch error:', err);
+            addToast({ message: 'Unexpected error while fetching team.', type: 'danger' });
+        } finally {
+            LoadingStore.set(false);
+        }
+    };
+
+    onMount(() => {
+        fetchTeamDetails();
+    })
+
+    const togglePlayerReadyState = (playerId: string, currentIsReady: boolean) => {
+        setPlayerReadyState(playerId, !currentIsReady);
+        addToast({
+            message: `Player status ${!currentIsReady ? 'Ready' : 'Not Ready'} updated!`,
+            type: 'success'
+        });
+    };
+</script>
+
+<main class={`p-8`}>
+    <h1 class={`text-2xl font-bold mb-4`}>Team Details</h1>
+
+    {#if $TeamStore}
+        <h2 class={`text-lg`}>Team: {$TeamStore.name}</h2>
+
+        {#if $TeamStore.allReady}
+            <p class={`text-green-500 font-bold mt-4`}>Everyone is ready!</p>
+        {/if}
+
+        <ul class={`list-disc list-inside mt-2`}>
+            {#each $TeamStore.members as member}
+                <li class={`flex items-center space-x-2`}>
+                    <span>{member.name}</span>
+                    <span>{member.isReady ? '✅ Ready' : '❌ Not Ready'}</span>
+                    <button
+                        onclick={() => togglePlayerReadyState(member.id, member.isReady)}
+                        class={`ml-2 px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-400`}
+                    >
+                        {member.isReady ? 'Mark Not Ready' : 'Mark Ready'}
+                    </button>
+                </li>
+            {/each}
+        </ul>
+    {:else}
+        <p class={`text-gray-500`}>Loading team info...</p>
+    {/if}
+</main>

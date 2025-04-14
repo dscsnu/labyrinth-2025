@@ -1,0 +1,227 @@
+definitions:
+  types.Team:
+    properties:
+      id:
+        type: string
+      members:
+        items:
+          $ref: '#/definitions/types.TeamMember'
+        type: array
+      name:
+        type: string
+    type: object
+  types.TeamMember:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_ready:
+        type: boolean
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/types.UserRole'
+    type: object
+  types.UserRole:
+    enum:
+    - PLAYER
+    - HELPER
+    - ADMIN
+    type: string
+    x-enum-varnames:
+    - PLAYER
+    - HELPER
+    - ADMIN
+info:
+  contact: {}
+paths:
+  /api/createteam:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new team using the provided team name and returns the
+        generated team ID. Also assigns default levels and initializes a communication
+        channel.
+      parameters:
+      - description: Payload containing the team name
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            team_name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The generated team ID
+          schema:
+            properties:
+              team_id:
+                type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Team
+      tags:
+      - Team
+  /api/game:
+    get:
+      consumes:
+      - application/json
+      description: Gets the config data for the game
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Game config retrieved successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get GameConfig
+      tags:
+      - Game
+  /api/tean:
+    get:
+      consumes:
+      - application/json
+      description: Gets the team info, using either team ID or user ID
+      parameters:
+      - description: ID of the team
+        in: query
+        name: team_id
+        type: string
+      - description: ID of a user belonging to the team
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Team retrieved successfully
+          schema:
+            $ref: '#/definitions/types.Team'
+        "400":
+          description: Bad request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get team info
+      tags:
+      - Team
+  /api/updateteam:
+    post:
+      consumes:
+      - application/json
+      description: Adds members to the team specified in the payload
+      parameters:
+      - description: Payload containing the id of the team to join
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            team_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated team the member is added to
+          schema:
+            $ref: '#/definitions/types.Team'
+        "400":
+          description: Bad request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Add member to team
+      tags:
+      - Team
+  /api/user/status:
+    post:
+      consumes:
+      - application/json
+      description: Changes is_ready status for a user if they're in a team
+      parameters:
+      - description: The ready state to change to
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            is_ready:
+              type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The team with the updated ready state for the member
+          schema:
+            $ref: '#/definitions/types.Team'
+        "400":
+          description: Bad request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Modify is_ready state for members
+      tags:
+      - Team
+swagger: "2.0"
