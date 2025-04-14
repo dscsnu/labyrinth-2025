@@ -21,10 +21,17 @@ export async function POST({ request }) {
                 valid = true;
             }
         }
+        let route = "/";
+        if (decoded.payload.startsWith('location:')) {
+            route = "/api/scan/location";
+        } 
+        else if (decoded.payload.startsWith('qte:')) {
+            route = "/api/scan/qte";
+        }        
 
         return json({
             valid: valid,
-            payload: decoded.payload,
+            route: route,
         });
     } catch (err) {
         console.error('Error decrypting token:', err);
