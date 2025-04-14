@@ -11,7 +11,6 @@ import (
 
 	_ "labyrinth/docs"
 
-	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
