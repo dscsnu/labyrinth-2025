@@ -1,10 +1,10 @@
-import { TEAM_TOKEN_NAME } from "$lib/stores/TeamStore";
+import { TOKEN_NAME } from "$lib/stores/TeamStore";
 import { redirect } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
 // @ts-ignore
 export const load: PageServerLoad = async ({ cookies }) => {
-    const teamCookie = cookies.get(TEAM_TOKEN_NAME);
+    const teamCookie = cookies.get(TOKEN_NAME);
 
     // Check if user has a team
     if (!teamCookie) {
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
         }
     } catch (e) {
         console.error('Failed to parse team cookie:', e);
-        cookies.delete(TEAM_TOKEN_NAME, { path: '/' });
+        cookies.delete(TOKEN_NAME, { path: '/' });
         throw redirect(303, '/newplayer');
     }
 
