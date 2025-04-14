@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"labyrinth/internal/types"
+	"math/rand"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -113,24 +115,37 @@ func (pd *PostgresDriver) GetTeamByUserId(ctx context.Context, userId uuid.UUID)
 
 }
 
-func (pd *PostgresDriver) GetUser(ctx context.Context, userEmail string) (types.UserProfile, error) {
-	userProfile := types.UserProfile{}
-	row := pd.pool.QueryRow(ctx, "SELECT id, name, email, created_at, role from userprofile WHERE email=$1", userEmail)
+func (pd *PostgresDriver) AssignLevelsToTeam(ctx context.Context, teamId string) error {
 
-	if err := row.Scan(&userProfile.ID, &userProfile.Name, &userProfile.Email, &userProfile.CreatedAt, &userProfile.Role); err != nil {
-		return userProfile, err
+	levelIds := shuffleLevelIds()
+
+	tx, err := pd.pool.Begin(ctx)
+	if err != nil {
+		return err
 	}
 
-	return userProfile, nil
+	defer tx.Rollback(ctx)
+
+	for seq, levelId := range levelIds {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO teamlevelassignment (team_id, level_id, sequence)
+			VALUES ($1, $2, $3)
+		`, teamId, levelId, seq)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+
 }
 
-func (pd *PostgresDriver) GetUserById(ctx context.Context, userId uuid.UUID) (types.UserProfile, error) {
-	user := types.UserProfile{}
-	row := pd.pool.QueryRow(ctx, "SELECT id, name, email, created_at, role FROM userprofile WHERE id=$1", userId)
-
-	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt, &user.Role); err != nil {
-		return user, err
-	}
-
-	return user, nil
+func shuffleLevelIds() []int {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ids := []int{1, 2, 3, 4, 5, 6}
+	r.Shuffle(len(ids), func(i, j int) {
+		ids[i], ids[j] = ids[j], ids[i]
+	})
+	return append(ids, 7)
 }
