@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"labyrinth/internal/controllers/middleware"
 	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
@@ -81,7 +82,7 @@ func TeamChannelEventHandler(rtr *router.Router) http.HandlerFunc {
 
 		for eventMessage := range listenerChannel {
 
-			if _, err = w.Write(eventMessage.Message); err != nil {
+			if err = json.NewEncoder(w).Encode(eventMessage); err != nil {
 
 				rtr.Logger.Debug("http stream write failed")
 
