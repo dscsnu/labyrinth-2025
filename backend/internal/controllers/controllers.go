@@ -6,7 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	_ "labyrinth/docs"
+
 	"github.com/rs/cors"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func HandleAll(rtr *router.Router) {
@@ -24,6 +27,10 @@ func HandleAll(rtr *router.Router) {
 	rtr.HandleFunc("/api/updateteam", middleware.Authorized(rtr, Post(TeamUpdateHandler(rtr))))
 
 	rtr.HandleFunc("/api/eventlistener", middleware.Authorized(rtr, TeamChannelEventHandler(rtr)))
+
+	rtr.Handle("/swagger/", http.StripPrefix("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:3100/swagger/doc.json"),
+	)))
 }
 
 func DefaultHandler(rtr *router.Router) http.HandlerFunc {
