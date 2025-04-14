@@ -39,7 +39,7 @@ func (c *ChannelPool) GetChannel(teamId string) *Channel {
 }
 
 type Channel struct {
-	Recv             <-chan protocol.Packet
+	Recv             chan protocol.Packet
 	BroadcastClients struct {
 		bc  map[chan<- protocol.Packet]struct{}
 		mut sync.Mutex
@@ -48,7 +48,7 @@ type Channel struct {
 
 func NewChannel() *Channel {
 
-	return &Channel{Recv: make(<-chan protocol.Packet), BroadcastClients: struct {
+	return &Channel{Recv: make(chan protocol.Packet), BroadcastClients: struct {
 		bc  map[chan<- protocol.Packet]struct{}
 		mut sync.Mutex
 	}{
@@ -66,6 +66,12 @@ func (c *Channel) AddMember(memberChannel chan<- protocol.Packet) {
 
 }
 
+func (c *Channel) Broadcast(packet protocol.Packet) {
+
+	c.Recv <- packet
+
+}
+
 func (c *Channel) Start() {
 
 	for packet := range c.Recv {
@@ -76,40 +82,27 @@ func (c *Channel) Start() {
 
 		}
 
+		c.BroadcastClients.mut.Lock()
+		for client := range c.BroadcastClients.bc {
+
+			client <- packet
+		}
+		c.BroadcastClients.mut.Unlock()
+
 	}
 
 }
 
+// change backend state with packets
 func (c *Channel) handlePacket(packet protocol.Packet) bool {
 
 	switch packet.Type {
 
-	case protocol.PacketTypeChannelState:
+	case "BackgroundMessage":
 
-		//channelStateMessage, err := protocol.DecodeChannelStateMessage(packet.Message)
+	case "ChannelStateMessage":
 
-	case protocol.PacketTypeBackground:
-		backgroundMessage, err := protocol.DecodeBackgroundMessage(packet.Message)
-		if err != nil {
-
-			return true
-
-		}
-
-		if backgroundMessage.MsgContext == protocol.JoinBackgroundMessageContext {
-
-			c.BroadcastClients.mut.Lock()
-			for broadcastClient := range c.BroadcastClients.bc {
-
-				broadcastClient <- packet
-
-			}
-			c.BroadcastClients.mut.Unlock()
-
-		}
-
-	case protocol.PacketTypeGame:
-		//gameMessage, err := protocol.DecodeGameMessage(packet.Message)
+	case "GameMessage":
 
 	}
 
