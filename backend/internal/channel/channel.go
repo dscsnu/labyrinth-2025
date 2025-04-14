@@ -89,7 +89,23 @@ func (c *Channel) handlePacket(packet protocol.Packet) bool {
 		//channelStateMessage, err := protocol.DecodeChannelStateMessage(packet.Message)
 
 	case protocol.PacketTypeBackground:
-		//backgroundMessage, err := protocol.DecodeBackgroundMessage(packet.Message)
+		backgroundMessage, err := protocol.DecodeBackgroundMessage(packet.Message)
+		if err != nil {
+
+			return true
+
+		}
+
+		if backgroundMessage.MsgContext == protocol.JoinBackgroundMessageContext {
+
+			c.BroadcastClients.mut.Lock()
+			for broadcastClient := range c.BroadcastClients.bc {
+
+				broadcastClient <- packet
+
+			}
+
+		}
 
 	case protocol.PacketTypeGame:
 		//gameMessage, err := protocol.DecodeGameMessage(packet.Message)
