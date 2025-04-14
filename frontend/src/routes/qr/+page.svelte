@@ -36,7 +36,7 @@
         console.error('Error generating QR code:', err);
       }
     }
-    
+
     onMount(() => {
       generateQRCode();
       intervalId = window.setInterval(generateQRCode, 5000);
