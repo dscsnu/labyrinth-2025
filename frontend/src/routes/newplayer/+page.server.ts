@@ -11,6 +11,9 @@ export const load: PageServerLoad = async ({ cookies }) => {
         // try catch is here to handle the case where the cookie is malformed
         try {
             const teamData = JSON.parse(decodeURIComponent(teamCookie));
+            if (teamData.isReady) {
+                throw redirect(303, '/game');
+            }
             throw redirect(303, '/team');
         } catch (e) {
             console.error('Failed to parse team cookie:', e);
