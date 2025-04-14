@@ -3,7 +3,6 @@ import json
 import os
 import shutil
 import time
-
 import pygame
 
 os.chdir(os.path.dirname(__file__))
@@ -339,6 +338,24 @@ def approve_current(now):
     f.close()
     print(f"{left_nodes} assigned to {right_name}")
 
+    # Save approved nodes to individual spell file
+    SPELL_JSON_DIR = os.path.abspath("patterns_by_spell")
+    os.makedirs(SPELL_JSON_DIR, exist_ok=True)
+
+    spell_json_path = os.path.join(SPELL_JSON_DIR, f"{right_name}.json")
+    if os.path.exists(spell_json_path):
+        with open(spell_json_path, "r") as sf:
+            spell_data = json.load(sf)
+    else:
+        spell_data = []
+
+    if list(left_nodes) not in spell_data:
+        spell_data.append(list(left_nodes))
+
+    with open(spell_json_path, "w") as sf:
+        json.dump(spell_data, sf, indent=4)
+
+
     # Remember the current index before reloading
     current_index = left_index
 
@@ -372,32 +389,57 @@ def reject_current(now):
     # Move instead of copy
     shutil.move(left_path, target_path)
     action_stack.append(("rejected", left_index, target_path, left_path))
-
-    # prints that the nodes were rejected
-    print(f"{left_nodes} was rejected")
     node_stack.append(left_nodes)
-    right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
-    file_exists = False
+
+    print(f"{left_nodes} was rejected")
+
+    triangle_key = "triangle"
+    is_triangle = isinstance(left_nodes, tuple) and len(left_nodes) == 3
+
+    # Load or initialize spell_patterns.json
     try:
-        with open("spell_patterns.json", "r"):
-            file_exists = True
+        with open("spell_patterns.json", "r") as f:
+            data = json.load(f)
     except FileNotFoundError:
-        pass
-    if file_exists:
-        f = open("spell_patterns.json", "r")
-        data = json.load(f)
-        f.close()
+        data = {"valid_patterns": 0}
+
+    if is_triangle:
+        if triangle_key not in data:
+            data[triangle_key] = {"patterns": [], "valid_patterns": 0}
+        if list(left_nodes) not in data[triangle_key]["patterns"]:
+            data[triangle_key]["patterns"].append(list(left_nodes))
+            data[triangle_key]["valid_patterns"] += 1
+            data["valid_patterns"] += 1
+        print(f"{left_nodes} saved to triangle")
+    else:
+        right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
         if right_name in data:
             if list(left_nodes) in data[right_name]["patterns"]:
                 data[right_name]["patterns"].remove(list(left_nodes))
-                if len(data[right_name]["patterns"]) == 0:
-                    data.pop(right_name, None)
-                else:
-                    data[right_name]["valid_patterns"] -= 1
+                data[right_name]["valid_patterns"] -= 1
                 data["valid_patterns"] -= 1
-        f = open("spell_patterns.json", "w+")
-        f.write(json.dumps(data, indent=4))
-        f.close()
+                if data[right_name]["valid_patterns"] == 0:
+                    del data[right_name]
+
+    with open("spell_patterns.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+    # Also save to patterns_by_spell/triangle.json if it's a triangle
+    if is_triangle:
+        triangle_json_path = os.path.join("patterns_by_spell", f"{triangle_key}.json")
+        os.makedirs("patterns_by_spell", exist_ok=True)
+
+        try:
+            with open(triangle_json_path, "r") as tf:
+                triangle_data = json.load(tf)
+        except FileNotFoundError:
+            triangle_data = []
+
+        if list(left_nodes) not in triangle_data:
+            triangle_data.append(list(left_nodes))
+
+        with open(triangle_json_path, "w") as tf:
+            json.dump(triangle_data, tf, indent=4)
 
     # Remember the current index before reloading
     current_index = left_index
@@ -483,8 +525,10 @@ def main():
                     f.write(str(left_nodelist))
 
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+                if event.key == pygame.K_RETURN or event.key == pygame.K_y:
                     approve_current(now)
+                elif event.key == pygame.K_n:
+                    reject_current(now)
                 elif event.key == pygame.K_LEFT and right_paths:
                     key_held_left = True
                     next_hold_time = now
@@ -494,9 +538,10 @@ def main():
                 elif event.key == pygame.K_f:
                     fullscreen = not fullscreen
                     pygame.display.set_mode(
-                        (WIDTH, HEIGHT),
-                        pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE,
-                    )
+                            (WIDTH, HEIGHT),
+                            pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE,
+                        )
+
 
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
