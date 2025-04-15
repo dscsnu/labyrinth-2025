@@ -38,7 +38,69 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/createteam:
+  /api/game:
+    get:
+      consumes:
+      - application/json
+      description: Gets the config data for the game
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Game config retrieved successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get GameConfig
+      tags:
+      - Game
+  /api/team:
+    get:
+      consumes:
+      - application/json
+      description: Gets the team info, using either team ID or user ID
+      parameters:
+      - description: ID of the team
+        in: query
+        name: team_id
+        type: string
+      - description: ID of a user belonging to the team
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Team retrieved successfully
+          schema:
+            $ref: '#/definitions/types.Team'
+        "400":
+          description: Bad request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get team info
+      tags:
+      - Team
+  /api/team/create:
     post:
       consumes:
       - application/json
@@ -84,58 +146,24 @@ paths:
       summary: Create Team
       tags:
       - Team
-  /api/game:
-    get:
+  /api/team/leave:
+    post:
       consumes:
       - application/json
-      description: Gets the config data for the game
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Game config retrieved successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      summary: Get GameConfig
-      tags:
-      - Game
-  /api/tean:
-    get:
-      consumes:
-      - application/json
-      description: Gets the team info, using either team ID or user ID
+      description: Removes the member sending the request from their team if they
+        are currently in one, otherwise throws an error
       parameters:
-      - description: ID of the team
-        in: query
-        name: team_id
-        type: string
-      - description: ID of a user belonging to the team
-        in: query
-        name: user_id
-        type: string
+      - description: No payload
+        in: body
+        name: body
+        required: true
       produces:
       - application/json
       responses:
         "200":
-          description: Team retrieved successfully
+          description: No payload is returned
           schema:
-            $ref: '#/definitions/types.Team'
-        "400":
-          description: Bad request
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
+            type: nil
         "500":
           description: Internal server error
           schema:
@@ -143,10 +171,10 @@ paths:
               error:
                 type: string
             type: object
-      summary: Get team info
+      summary: Leave team
       tags:
       - Team
-  /api/updateteam:
+  /api/team/update:
     post:
       consumes:
       - application/json
@@ -197,7 +225,7 @@ paths:
         required: true
         schema:
           properties:
-            is_ready:
+            user_status:
               type: boolean
           type: object
       produces:
