@@ -1,10 +1,9 @@
 <script lang="ts">
-    // @ts-ignore
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount } from 'svelte';
     import QRCode from 'qrcode';
     
-    let qrDataUrl = '';
-    let intervalId: number;
+    let qrDataUrl = $state('');
+    
     async function generateQRCode() {
       try {
         const payload = 'location:1234';
@@ -39,11 +38,10 @@
 
     onMount(() => {
       generateQRCode();
-      intervalId = window.setInterval(generateQRCode, 5000);
-    });
-    
-    onDestroy(() => {
-      if (intervalId) clearInterval(intervalId);
+      const intervalId = window.setInterval(generateQRCode, 5000);
+      return () => {
+        if (intervalId) clearInterval(intervalId);
+      };
     });
 </script>
   
