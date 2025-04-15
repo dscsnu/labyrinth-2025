@@ -37,30 +37,31 @@
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                const message = errorData.message || "Failed to create team. Please contact helpers.";
-                addToast({
-                    message,
-                    type: 'danger'
-                });
-                return;
+            if (response.status === 200) {
+                const data = await response.json();
+
+                if (data.success) {
+                    const payload = data.payload;
+                    const teamData: ITeamData = {
+                        id: payload.team_id,
+                        name: teamName,
+                        members: [{
+                            id: user?.id!,
+                            name: user?.user_metadata.full_name!,
+                            email: user?.email!,
+                            isReady: false
+                        }],
+                    };
+
+                    setTeam(teamData);
+                    goto('/team');
+                } else {
+                    addToast({
+                        message: data.message,
+                        type: 'warning'
+                    });
+                }
             }
-
-            const data = await response.json();
-            const teamData: ITeamData = {
-                id: data.team_id,
-                name: teamName,
-                members: [{
-                    id: user?.id!,
-                    name: user?.user_metadata.full_name!,
-                    email: user?.email!,
-                    isReady: false,
-                }],
-            };
-
-            setTeam(teamData);
-            goto('/team');
         } catch (e) {
             console.error(`Error Creating Team > ${e}`);
             addToast({
@@ -91,30 +92,31 @@
                 body: JSON.stringify({ team_id: teamId }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                const message = errorData.message || "Failed to join team. Please contact helpers.";
-                addToast({
-                    message,
-                    type: 'danger'
-                });
-                return;
+            if (response.status === 200) {
+                const data = await response.json()
+
+                if (data.success) {
+                    const payload = data.payload;
+                    const teamData: ITeamData = {
+                        id: payload.id,
+                        name: payload.name,
+                        members: payload.members.map((m: any) => ({
+                            id: m.id,
+                            name: m.name,
+                            email: m.email,
+                            isReady: m.isReady
+                        })),
+                    };
+
+                    setTeam(teamData);
+                    goto('/team');
+                } else {
+                    addToast({
+                        message: data.message,
+                        type: 'warning'
+                    });
+                }
             }
-
-            const data = await response.json();
-            const teamData: ITeamData = {
-                id: data.id,
-                name: data.name,
-                members: data.members.map((m: any) => ({
-                    id: m.id,
-                    name: m.name,
-                    email: m.email,
-                    isReady: m.isReady
-                })),
-            };
-
-            setTeam(teamData);
-            goto('/team');
         } catch (e) {
             console.error(`Error Joining Team > ${e}`);
             addToast({
