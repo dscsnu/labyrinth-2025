@@ -15,7 +15,7 @@ import (
 //	@Tags			Team
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body		object{is_ready=bool}	true	"The ready state to change to"
+//	@Param			body	body		object{user_status=bool}	true	"The ready state to change to"
 //	@Success		200		{object}	types.Team				"The team with the updated ready state for the member"
 //	@Failure		400		{object}	object{error=string}	"Bad request"
 //	@Failure		500		{object}	object{error=string}	"Internal server error"
