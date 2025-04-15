@@ -1,7 +1,8 @@
 <script>
     // @ts-ignore
-    import { Html5Qrcode } from 'html5-qrcode'
-    import { onMount, onDestroy } from 'svelte'
+    import { Html5Qrcode } from 'html5-qrcode';
+    import { onMount, onDestroy } from 'svelte';
+    import { goto } from '$app/navigation';
 
     let html5Qrcode;
     let scanning = false;
@@ -29,7 +30,7 @@
     async function startScanning() {
         try {
             await html5Qrcode.start(
-                { facingMode: 'environment' }, // Use back camera
+                { facingMode: 'environment' },
                 {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
@@ -56,6 +57,7 @@
     }
     
     async function decryptQrCode(token) {
+        console.log('Decrypting QR code with token:', token);
         try {
             const response = await fetch('/qr/decrypt', {
                 method: 'POST',
@@ -64,21 +66,25 @@
                 },
                 body: JSON.stringify({ token })
             });
-            
+
             if (!response.ok) {
-                throw new Error(`Decryption failed with status ${response.status}`);
+                throw new Error(`Decryption failed with status ${JSON.stringify(response)}`);
             }
             
             const result = await response.json();
-            
-            let message = `Valid: ${result.valid ? 'Yes' : 'No'}\nRoute: ${result.route}`;
-            
-            alert(message);
-            startScanning();
 
+            if (result.valid && result.route) {
+                const destinationUrl = `${result.route}?token=${encodeURIComponent(token)}`;
+                goto(destinationUrl);
+    
+            } else {
+                alert(`Invalid QR code or missing route: ${JSON.stringify(result)}`);
+                startScanning();
+            }
         } catch (err) {
             console.error('Error decrypting QR code:', err);
             alert(`Error: ${err instanceof Error ? err.message : 'Failed to decrypt QR code'}`);
+            startScanning();
         }
     }
 </script>
