@@ -85,7 +85,13 @@ func (c *Channel) Start() {
 		c.BroadcastClients.mut.Lock()
 		for client := range c.BroadcastClients.bc {
 
-			client <- packet
+			select {
+
+			case client <- packet:
+
+			default:
+
+			}
 		}
 		c.BroadcastClients.mut.Unlock()
 
