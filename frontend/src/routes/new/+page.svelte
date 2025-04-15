@@ -3,47 +3,12 @@
     import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte";
     import { LoadingStore } from "$lib/stores/LoadingStore";
     import { UserStore } from "$lib/stores/SupabaseStore";
-    import { setTeam, TeamStore, type ITeamData } from "$lib/stores/TeamStore";
+    import { setTeam, type ITeamData } from "$lib/stores/TeamStore";
     import { addToast } from "$lib/stores/ToastStore";
     import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
-    import { onMount } from "svelte";
 
     const { data } = $props();
-    const { user } = $derived(data);
-
-    onMount(() => {
-        if (!$TeamStore) {
-            LoadingStore.set(true);
-            try {
-                (async () => {
-                    const params = new URLSearchParams({ user_id: user?.id! })
-                    console.log(params.toString())
-                    const response = await fetchWithAuth(`api/team?${params.toString()}`);
-
-                    if (!response.ok) {
-                        return;
-                    }
-
-                    const data = await response.json();
-                    const teamData: ITeamData = {
-                        id: data.team_id,
-                        name: data.name,
-                        members: [{
-                            id: user?.id!,
-                            name: user?.user_metadata.full_name!,
-                            email: user?.email!,
-                            isReady: false,
-                        }],
-                    };
-
-                    setTeam(teamData);
-                    goto('/team')
-                })();
-            } finally {
-                LoadingStore.set(false);
-            }
-        }
-    })
+    const { user, supabase } = $derived(data);
 
     type PageState = 'create' | 'join';
 
@@ -72,30 +37,31 @@
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                const message = errorData.message || "Failed to create team. Please contact helpers.";
-                addToast({
-                    message,
-                    type: 'danger'
-                });
-                return;
+            if (response.status === 200) {
+                const data = await response.json();
+
+                if (data.success) {
+                    const payload = data.payload;
+                    const teamData: ITeamData = {
+                        id: payload.team_id,
+                        name: teamName,
+                        members: [{
+                            id: user?.id!,
+                            name: user?.user_metadata.full_name!,
+                            email: user?.email!,
+                            isReady: false
+                        }],
+                    };
+
+                    setTeam(teamData);
+                    goto('/team');
+                } else {
+                    addToast({
+                        message: data.message,
+                        type: 'warning'
+                    });
+                }
             }
-
-            const data = await response.json();
-            const teamData: ITeamData = {
-                id: data.team_id,
-                name: teamName,
-                members: [{
-                    id: user?.id!,
-                    name: user?.user_metadata.full_name!,
-                    email: user?.email!,
-                    isReady: false,
-                }],
-            };
-
-            setTeam(teamData);
-            goto('/team');
         } catch (e) {
             console.error(`Error Creating Team > ${e}`);
             addToast({
@@ -126,30 +92,31 @@
                 body: JSON.stringify({ team_id: teamId }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                const message = errorData.message || "Failed to join team. Please contact helpers.";
-                addToast({
-                    message,
-                    type: 'danger'
-                });
-                return;
+            if (response.status === 200) {
+                const data = await response.json()
+
+                if (data.success) {
+                    const payload = data.payload;
+                    const teamData: ITeamData = {
+                        id: payload.id,
+                        name: payload.name,
+                        members: payload.members.map((m: any) => ({
+                            id: m.id,
+                            name: m.name,
+                            email: m.email,
+                            isReady: m.isReady
+                        })),
+                    };
+
+                    setTeam(teamData);
+                    goto('/team');
+                } else {
+                    addToast({
+                        message: data.message,
+                        type: 'warning'
+                    });
+                }
             }
-
-            const data = await response.json();
-            const teamData: ITeamData = {
-                id: data.id,
-                name: data.name,
-                members: data.members.map((m: any) => ({
-                    id: m.id,
-                    name: m.name,
-                    email: m.email,
-                    isReady: m.isReady
-                })),
-            };
-
-            setTeam(teamData);
-            goto('/team');
         } catch (e) {
             console.error(`Error Joining Team > ${e}`);
             addToast({
@@ -159,6 +126,10 @@
         } finally {
             LoadingStore.set(false);
         }
+    }
+
+    const handleSignOut = () => {
+        supabase.auth.signOut();
     }
 </script>
 
@@ -208,7 +179,7 @@
 
     <div class={`flex flex-col`}>
         <p>{$UserStore?.email}</p>
-        <button class={`border-2 px-4 py-2 rounded-lg`}>
+        <button onclick={() => handleSignOut()} class={`border-2 px-4 py-2 rounded-lg`}>
             Sign Out
         </button>
     </div>

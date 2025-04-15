@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { TokenStore } from "$lib/stores/TokenStore";
+import { JwtTokenStore } from "$lib/stores/JwtTokenStore";
 import { PUBLIC_BACKEND_URL } from "$env/static/public";
 
 interface FetchOptions extends RequestInit {
@@ -18,7 +18,7 @@ interface FetchOptions extends RequestInit {
  * @returns A Promise resolving to the Fetch API Response object.
  */
 export const fetchWithAuth = async (route: string, options: FetchOptions = {}): Promise<Response> => {
-    const jwt = get(TokenStore);
+    const jwt = get(JwtTokenStore);
     const cleanedUrl = PUBLIC_BACKEND_URL.replace(/\/+$/, "");
     const cleanedRoute = route.replace(/^\/+/, "");
 
