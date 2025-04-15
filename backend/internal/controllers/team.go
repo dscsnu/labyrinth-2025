@@ -40,10 +40,16 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 
 			//http.Error(w, "error reading teamName field, invalid json payload", http.StatusBadRequest)
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "error reading tean_name field, invalid json payload",
-			})
+			//w.WriteHeader(http.StatusBadRequest)
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "invalid json payload",
+				Payload: nil,
+			}
+			//json.NewEncoder(w).Encode(map[string]string{
+			//	"error": "error reading tean_name field, invalid json payload",
+			//})
+			json.NewEncoder(w).Encode(apiResponse)
 			return
 
 		}
@@ -88,9 +94,15 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 		go teamChannel.Start()
 
-		json.NewEncoder(w).Encode(map[string]string{
-			"team_id": teamId,
-		})
+		payload, _ := json.Marshal(map[string]string{"team_id": teamId})
+
+		apiResponse := types.ApiResponse{
+			Success: true,
+			Message: "success",
+			Payload: payload,
+		}
+
+		json.NewEncoder(w).Encode(apiResponse)
 
 	})
 
@@ -120,7 +132,16 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 
-			http.Error(w, "error getting team_id field, invalid json payload", http.StatusBadRequest)
+			//http.Error(w, "error getting team_id field, invalid json payload", http.StatusBadRequest)
+
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "error getting team_id from json payload",
+				Payload: nil,
+			}
+
+			json.NewEncoder(w).Encode(apiResponse)
+
 			return
 
 		}
@@ -149,7 +170,15 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 		teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
 		teamChannel.Broadcast(protocol.Packet{Type: "BackgroundMessage", BackgroundMessage: protocol.BackgroundMessage{Relay: fmt.Sprintf("teamId:%s -> %s joined the team", team.ID, profile.Email), MsgContext: "channel_creation"}})
 
-		if err := json.NewEncoder(w).Encode(team); err != nil {
+		payload, _ := json.Marshal(team)
+
+		apiResponse := types.ApiResponse{
+			Success: true,
+			Message: "Member added to team successfully!",
+			Payload: payload,
+		}
+
+		if err := json.NewEncoder(w).Encode(apiResponse); err != nil {
 			http.Error(w, "error encoding response", http.StatusInternalServerError)
 		}
 
@@ -180,10 +209,18 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 
 		if teamId == "" && userId == "" {
 			//http.Error(w, "Either user_id or team_id must be provided", http.StatusBadRequest)
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "either used_id or team_id not provided",
-			})
+			//w.WriteHeader(http.StatusBadRequest)
+			//json.NewEncoder(w).Encode(map[string]string{
+			//	"error": "either user_id or team_id not provided",
+			//})
+
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "either user_id or team_id not provided",
+				Payload: nil,
+			}
+			json.NewEncoder(w).Encode(apiResponse)
+
 			return
 		}
 
@@ -196,10 +233,18 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 			parsedId, parseErr := uuid.Parse(userId)
 			if parseErr != nil {
 				//http.Error(w, "invalid player_id format", http.StatusBadRequest)
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(map[string]string{
-					"error": "player id format is invalid, should be uuid string",
-				})
+				//w.WriteHeader(http.StatusBadRequest)
+				//json.NewEncoder(w).Encode(map[string]string{
+				//	"error": "player id format is invalid, should be uuid string",
+				//})
+
+				apiResponse := types.ApiResponse{
+					Success: false,
+					Message: "player id format is invalid, should be uuid string",
+					Payload: nil,
+				}
+				json.NewEncoder(w).Encode(apiResponse)
+
 			}
 			team, err = rtr.State.DB.GetTeamByUserId(context.Background(), parsedId)
 		}
@@ -207,7 +252,7 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 		if err != nil {
 			rtr.Logger.Error("failed to fetch team", slog.String("error", err.Error()))
 			//http.Error(w, "internal server error", http.StatusInternalServerError)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{
 				"error": "internal server error",
 			})
