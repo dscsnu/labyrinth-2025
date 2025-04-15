@@ -59,6 +59,8 @@ func TeamChannelEventHandler(rtr *router.Router) http.HandlerFunc {
 		listenerChannel := make(chan protocol.Packet)
 		teamChannel.AddMember(listenerChannel)
 
+		w.Header().Add("Content-Type", "text/event-stream")
+
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 
