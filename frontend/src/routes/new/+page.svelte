@@ -3,47 +3,12 @@
     import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte";
     import { LoadingStore } from "$lib/stores/LoadingStore";
     import { UserStore } from "$lib/stores/SupabaseStore";
-    import { setTeam, TeamStore, type ITeamData } from "$lib/stores/TeamStore";
+    import { setTeam, type ITeamData } from "$lib/stores/TeamStore";
     import { addToast } from "$lib/stores/ToastStore";
     import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
-    import { onMount } from "svelte";
 
     const { data } = $props();
-    const { user } = $derived(data);
-
-    onMount(() => {
-        if (!$TeamStore) {
-            LoadingStore.set(true);
-            try {
-                (async () => {
-                    const params = new URLSearchParams({ user_id: user?.id! })
-                    console.log(params.toString())
-                    const response = await fetchWithAuth(`api/team?${params.toString()}`);
-
-                    if (!response.ok) {
-                        return;
-                    }
-
-                    const data = await response.json();
-                    const teamData: ITeamData = {
-                        id: data.team_id,
-                        name: data.name,
-                        members: [{
-                            id: user?.id!,
-                            name: user?.user_metadata.full_name!,
-                            email: user?.email!,
-                            isReady: false,
-                        }],
-                    };
-
-                    setTeam(teamData);
-                    goto('/team')
-                })();
-            } finally {
-                LoadingStore.set(false);
-            }
-        }
-    })
+    const { user, supabase } = $derived(data);
 
     type PageState = 'create' | 'join';
 
@@ -160,6 +125,10 @@
             LoadingStore.set(false);
         }
     }
+
+    const handleSignOut = () => {
+        supabase.auth.signOut();
+    }
 </script>
 
 <main class={`h-screen w-screen flex flex-col justify-center items-center py-4`}>
@@ -208,7 +177,7 @@
 
     <div class={`flex flex-col`}>
         <p>{$UserStore?.email}</p>
-        <button class={`border-2 px-4 py-2 rounded-lg`}>
+        <button onclick={() => handleSignOut()} class={`border-2 px-4 py-2 rounded-lg`}>
             Sign Out
         </button>
     </div>
