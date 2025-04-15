@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"labyrinth/internal/router"
+	"labyrinth/internal/types"
 	"net/http"
 )
 
@@ -31,10 +32,19 @@ func TeamMemberStatusUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			//http.Error(w, "error reading userStatus field, invalid json payload", http.StatusBadRequest)
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "invalid json payload",
-			})
+			//w.WriteHeader(http.StatusBadRequest)
+			//json.NewEncoder(w).Encode(map[string]string{
+			//	"error": "invalid json payload",
+			//})
+
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "invalid json payload",
+				Payload: nil,
+			}
+
+			json.NewEncoder(w).Encode(apiResponse)
+
 			return
 		}
 
@@ -71,7 +81,16 @@ func TeamMemberStatusUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(team)
+		responsePayload, _ := json.Marshal(team)
+
+		apiResponse := types.ApiResponse{
+			Success: true,
+			Message: "Successfully updated ready status!",
+			Payload: responsePayload,
+		}
+
+		err = json.NewEncoder(w).Encode(apiResponse)
+
 		if err != nil {
 			//http.Error(w, "error encoding json", http.StatusInternalServerError)
 			w.WriteHeader(http.StatusInternalServerError)
