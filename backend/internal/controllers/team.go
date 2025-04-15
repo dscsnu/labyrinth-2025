@@ -41,9 +41,15 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 			//http.Error(w, "error reading teamName field, invalid json payload", http.StatusBadRequest)
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "error reading tean_name field, invalid json payload",
-			})
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "invalid json payload",
+				Payload: nil,
+			}
+			//json.NewEncoder(w).Encode(map[string]string{
+			//	"error": "error reading tean_name field, invalid json payload",
+			//})
+			json.NewEncoder(w).Encode(apiResponse)
 			return
 
 		}
