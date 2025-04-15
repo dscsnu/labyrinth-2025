@@ -26,7 +26,7 @@ import (
 //	@Failure		400		{object}	object{error=string}		"Bad Request"
 //	@Failure		500		{object}	object{error=string}		"Internal Server Error"
 //	@Security		BearerAuth
-//	@Router			/api/createteam [post]
+//	@Router			/api/team/create [post]
 func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +119,7 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 //	@Success		200		{object}	types.Team				"Updated team the member is added to"
 //	@Failure		400		{object}	object{error=string}	"Bad request"
 //	@Failure		500		{object}	object{error=string}	"Internal Server Error"
-//	@Router			/api/updateteam [post]
+//	@Router			/api/team/update [post]
 func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +165,7 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, "error fetching the team", http.StatusInternalServerError)
 			rtr.Logger.Error("internal error while getting team", "error", err.Error())
+			return
 		}
 
 		teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
@@ -180,6 +181,7 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 		if err := json.NewEncoder(w).Encode(apiResponse); err != nil {
 			http.Error(w, "error encoding response", http.StatusInternalServerError)
+			return
 		}
 
 	})
@@ -198,7 +200,7 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 //	@Success		200		{object}	types.Team				"Team retrieved successfully"
 //	@Failure		400		{object}	object{error=string}	"Bad request"
 //	@Failure		500		{object}	object{error=string}	"Internal server error"
-//	@Router			/api/tean [get]
+//	@Router			/api/team [get]
 func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -266,6 +268,65 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 			})
 			//http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		}
+	})
+
+}
+
+// LeaveTeamHandler handles members leaving the team
+//
+// @Summary Leave team
+// @Description Removes the member sending the request from their team if they are currently in one, otherwise throws an error
+// @Tags Team
+// @Accept json
+// @Produce json
+// @Param body body nil true "No payload"
+// @Success 200 nil nil "No payload is returned"
+// @Failure 500 {object} object{error=string} "Internal server error"
+// @Router /api/team/leave [post]
+func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		userEmail := r.Context().Value("email").(string)
+
+		user, err := rtr.State.DB.GetUser(context.Background(), userEmail)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
+			rtr.Logger.Error("internal server error", "error", err)
+			return
+		}
+
+		team, err := rtr.State.DB.GetTeamByUserId(context.Background(), user.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
+			rtr.Logger.Error("internal server error", "error", err)
+			return
+		}
+
+		err = rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
+			rtr.Logger.Error("internal server error", "error", err)
+			return
+		}
+
+		apiResponse := types.ApiResponse{
+			Success: true,
+			Message: "Successfully left team!",
+			Payload: nil,
+		}
+
+		json.NewEncoder(w).Encode(apiResponse)
+
 	})
 
 }

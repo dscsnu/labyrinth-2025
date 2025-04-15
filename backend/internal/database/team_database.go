@@ -63,6 +63,27 @@ func (pd *PostgresDriver) AddTeamMember(ctx context.Context, teamId string, user
 	return nil
 }
 
+func (pd *PostgresDriver) LeaveTeamMember(ctx context.Context, teamId string, userId uuid.UUID) error {
+	_, err := pd.pool.Exec(ctx, "DELETE FROM teammember WHERE team_id=$1 AND user_id=$2", teamId, userId)
+	if err != nil {
+		return err
+	}
+	var count int
+	err = pd.pool.QueryRow(ctx, `SELECT COUNT(*) FROM teammember WHERE team_id=$1`, teamId).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		_, err := pd.pool.Exec(ctx, `DELETE FROM team WHERE id=$1`, teamId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types.Team, error) {
 	team := types.Team{}
 
