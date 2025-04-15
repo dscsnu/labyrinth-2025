@@ -11,6 +11,7 @@
 	import Toast from "$lib/components/Toast.svelte";
 	import { LoadingStore } from "$lib/stores/LoadingStore";
 	import Loading from "$lib/components/Loading.svelte";
+    import StreamListener from "$lib/components/StreamListener.svelte";
 
 	let { data, children } = $props();
 	let { supabase, session, user } = $derived(data);
@@ -71,3 +72,6 @@
 {#if $LoadingStore}
 	<Loading />
 {/if}
+
+
+<StreamListener />
