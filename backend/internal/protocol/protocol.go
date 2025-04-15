@@ -7,6 +7,11 @@ type Packet struct {
 	GameMessage         `json:"gameMessage"`
 }
 
+type TeamPacket struct {
+	Relay      string `json:"message"`
+	MsgContext string `json:"msgcontext"`
+}
+
 type BackgroundMessage struct {
 	Relay      string `json:"message"`
 	MsgContext string `json:"msgcontext"`

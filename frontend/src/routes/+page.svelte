@@ -1,7 +1,4 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { token } from '$lib/stores/TokenStore';
-    import { goto } from '$app/navigation';
     let { data } = $props();
     let { supabase, user } = $derived(data);
 
@@ -17,11 +14,6 @@
             }
         })
     }
-    onMount(() => {
-        if (token) {
-            goto('/newplayer');  
-        }
-    });
 </script>
 
 <main class={`h-screen w-screen flex flex-col justify-center items-center`}>

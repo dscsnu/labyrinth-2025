@@ -1,99 +1,50 @@
-import { browser } from "$app/environment";
-import { getCookie } from "$lib/utils/getCookie";
-import { writable } from "svelte/store";
+import createPersistentStore from "$lib/utils/createPersistentStore";
+import { get } from "svelte/store";
 
-// Define team data structure
-interface TeamData {
+export interface ITeamData {
     id: string;
     name: string;
+    members: IMember[];
+}
+
+export interface IMember {
+    id: string;
+    name: string;
+    email: string;
     isReady: boolean;
 }
 
-const TEAM_TOKEN_NAME = 'labyrinth-gdsc-team';
+export const TOKEN_NAME = 'labyrinth-gdsc-team';
 
-// Initialize from localStorage or cookies
-const getInitialTeamData = (): TeamData | null => {
-    if (!browser) return null;
+const {
+    store: TeamStore, set: setTeam
+} = createPersistentStore<ITeamData>(TOKEN_NAME);
 
-    // Try local storage first
-    const storedData = window.localStorage.getItem(TEAM_TOKEN_NAME);
-    if (storedData) {
-        try {
-            return JSON.parse(storedData);
-        } catch (e) {
-            // If JSON parsing fails, continue to cookie fallback
-        }
-    }
+export const setPlayerReadyState = (playerId: string, isReady: boolean) => {
+    const current = get(TeamStore);
+    if (!current) return;
 
-    // Try cookie as fallback
-    const cookieData = getCookie(document.cookie, TEAM_TOKEN_NAME);
-    if (cookieData) {
-        try {
-            return JSON.parse(cookieData);
-        } catch (e) {
-            // If JSON parsing fails, return null
-        }
-    }
+    const members = current.members.map(member =>
+        member.id === playerId ? { ...member, isReady } : member
+    );
 
-    return null;
-};
+    setTeam({ ...current, members });
+}
 
-const team = writable<TeamData | null>(getInitialTeamData());
+export const getPlayerReadyState = (playerId: string): boolean => {
+    const current = get(TeamStore);
+    if (!current) return false;
 
-// Function to update team data
-const setTeam = (teamData: TeamData | null) => {
-    if (!browser) return;
+    return current.members.find(m => m.id === playerId)!.isReady;
+}
 
-    if (teamData) {
-        // Serialize team data to JSON
-        const serialized = JSON.stringify(teamData);
+export const updateTeam = (update: Partial<ITeamData>) => {
+    const current = get(TeamStore);
+    if (!current) return;
 
-        // Store in both localStorage and cookies
-        window.localStorage.setItem(TEAM_TOKEN_NAME, serialized);
-        document.cookie = `${TEAM_TOKEN_NAME}=${encodeURIComponent(serialized)};path=/;max-age=${60 * 60 * 24 * 365}`;
-    } else {
-        // Clear data if teamData is null
-        window.localStorage.removeItem(TEAM_TOKEN_NAME);
-        document.cookie = `${TEAM_TOKEN_NAME}=null;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
-    }
+    setTeam({ ...current, ...update });
+}
 
-    team.set(teamData);
-};
+export const clearTeam = () => setTeam(null);
 
-// Helper function to check if user has a team
-const hasTeam = (): boolean => {
-    const teamData = getInitialTeamData();
-    return !!teamData?.id;
-};
-
-// Function to update specific team properties
-const updateTeam = (updates: Partial<TeamData>) => {
-    const currentData = getInitialTeamData();
-    if (currentData) {
-        setTeam({ ...currentData, ...updates });
-    }
-};
-
-// Function to specifically update team ready status
-const setTeamReady = (isReady: boolean) => {
-    const currentData = getInitialTeamData();
-    if (currentData) {
-        setTeam({ ...currentData, isReady });
-    }
-};
-
-// Function to clear team data (e.g., when user logs out)
-const clearTeam = () => {
-    setTeam(null);
-};
-
-export {
-    team,
-    setTeam,
-    hasTeam,
-    clearTeam,
-    updateTeam,
-    setTeamReady,
-    TEAM_TOKEN_NAME,
-    type TeamData
-};
+export { TeamStore, setTeam };
