@@ -27,7 +27,7 @@
 
         LoadingStore.set(true);
         try {
-            const response = await fetchWithAuth('api/createteam', {
+            const response = await fetchWithAuth('api/team/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -84,7 +84,7 @@
 
         LoadingStore.set(true)
         try {
-            const response = await fetchWithAuth('api/updateteam', {
+            const response = await fetchWithAuth('api/team/update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
