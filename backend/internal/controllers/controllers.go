@@ -72,6 +72,7 @@ func TeamChannelEventHandler(rtr *router.Router) http.HandlerFunc {
 		listenerChannel := make(chan protocol.Packet)
 		teamChannel.AddMember(listenerChannel)
 
+		//w.Header().Add("Content-Type", "text/event-stream")
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
