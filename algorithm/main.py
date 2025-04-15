@@ -26,7 +26,7 @@ pos = {
     "Arc": (28.52723498480195, 77.57292972432113),
     "SARC": (28.523582249548888, 77.57437275274097),
     "C1": (28.52440905859402, 77.57308311017349),
-    "Dib": (28.5246012306206, 77.57226886728225),
+    "Dib": (28.525235547619324, 77.57072373132858),
     "DH3": (28.52316003957018, 77.5696713403205),
     "ISC": (28.521496152454514, 77.5712575598366),
 }
@@ -52,16 +52,16 @@ for i, combo in enumerate(tqdm(total, desc="Generating patterns")):
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.set_title(f"Nodes: {', '.join(combo)}", fontsize=8)
 
-    # Set map limits around campus
+#     # Set map limits around campus
     buffer = 200
     bounds = pts.total_bounds
     ax.set_xlim(bounds[0] - buffer, bounds[2] + buffer)
     ax.set_ylim(bounds[1] - buffer, bounds[3] + buffer)
 
-    # Add basemap (with transparency)
+#     # Add basemap (with transparency)
     cx.add_basemap(ax, source=cx.providers.OpenStreetMap.Mapnik, alpha=0.5)
 
-    # Plot only the selected nodes as red triangles
+#     # Plot only the selected nodes as red triangles
     for name in combo:
         geom = pts[pts["name"] == name].geometry.values[0]
         ax.scatter(geom.x, geom.y, s=100, color='red', edgecolors='black', marker='^', zorder=3)
