@@ -3,8 +3,11 @@ import jwt from 'jsonwebtoken';
 import { JWT_SESSION_KEY } from "$env/static/private";
 
 export async function POST({ request }) {
+    console.log('Received request to decrypt token');
+    const data = await request.json();
+
     try {
-        const data = await request.json();
+        console.log('Received data:', data.token);
         if (!data.token) {
             throw error(400, 'Token is required');
         }
