@@ -7,7 +7,6 @@ import type { User } from "@supabase/supabase-js";
 
 const validateTeam = async (cookies: Cookies, user: User) => {
     const jwtCookie = cookies.get(JWT_TOKEN_NAME);
-    console.log(jwtCookie)
     if (jwtCookie) {
         const cleanedUrl = PUBLIC_BACKEND_URL.replace(/\/+$/, "");
         const params = new URLSearchParams({ user_id: user.id });
@@ -22,17 +21,25 @@ const validateTeam = async (cookies: Cookies, user: User) => {
 
         const data = await response.json();
         const teamData: ITeamData = {
-            id: data.team_id,
+            id: data.id,
             name: data.name,
             members: data.members.map((m: any) => ({
                 id: m.id,
                 name: m.name,
                 email: m.email,
-                isReady: m.isReady
+                isReady: m.is_ready
             })),
         };
 
-        cookies.set(TEAM_TOKEN_NAME, JSON.stringify(teamData), { path: '/', encode: (v) => v });
+        cookies.set(
+            TEAM_TOKEN_NAME,
+            JSON.stringify(teamData),
+            {
+                path: '/',
+                encode: (v) => v,
+                httpOnly: false,
+            }
+        );
         redirect(303, '/team')
     }
 }
@@ -45,7 +52,7 @@ export const load: PageServerLoad = async ({ cookies, locals: { user } }) => {
         try {
             JSON.parse(teamCookie);
         } catch (e) {
-            console.error('ERROR: Malformed TeamCookie > ', e);
+            console.error(`Error: Malformed TeamCookie > ${e}`);
             cookies.delete(TEAM_TOKEN_NAME, { path: '/' });
             await validateTeam(cookies, user!);
             return {};
