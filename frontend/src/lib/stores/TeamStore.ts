@@ -31,6 +31,13 @@ export const setPlayerReadyState = (playerId: string, isReady: boolean) => {
     setTeam({ ...current, members });
 }
 
+export const getPlayerReadyState = (playerId: string): boolean => {
+    const current = get(TeamStore);
+    if (!current) return false;
+
+    return current.members.find(m => m.id === playerId)!.isReady;
+}
+
 export const updateTeam = (update: Partial<ITeamData>) => {
     const current = get(TeamStore);
     if (!current) return;

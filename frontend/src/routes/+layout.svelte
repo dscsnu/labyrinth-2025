@@ -6,7 +6,7 @@
 	import { SupaStore, UserStore } from "$lib/stores/SupabaseStore";
 	import MobileOnly from "$lib/components/MobileOnly.svelte";
 	import { PUBLIC_ENVIRONMENT } from "$env/static/public";
-	import { setToken } from "$lib/stores/TokenStore";
+	import { setToken } from "$lib/stores/JwtTokenStore";
 	import { ToastStore } from "$lib/stores/ToastStore";
 	import Toast from "$lib/components/Toast.svelte";
 	import { LoadingStore } from "$lib/stores/LoadingStore";
