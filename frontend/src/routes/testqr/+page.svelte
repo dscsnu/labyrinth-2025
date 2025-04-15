@@ -59,7 +59,7 @@
     async function decryptQrCode(token) {
         console.log('Decrypting QR code with token:', token);
         try {
-            const response = await fetch('/qr/decrypt', {
+            const response = await fetch('/api/qr/decrypt', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -8,7 +8,7 @@
       try {
         const payload = 'location:1234';
 
-        const encryptResponse = await fetch('/qr/encrypt', {
+        const encryptResponse = await fetch('/api/qr/encrypt', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
