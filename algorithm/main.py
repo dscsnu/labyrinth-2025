@@ -32,9 +32,9 @@ pos = {
 }
 
 nodes = list(pos.keys())
-# c3 = list(itertools.combinations(nodes, 3))
+c3 = list(itertools.combinations(nodes, 3))
 c4 = list(itertools.combinations(nodes, 4))
-total = c4
+total = c3 + c4
 
 # Write all combinations to patterns_nodes.txt
 with open(combo_file_path, "w") as f:
