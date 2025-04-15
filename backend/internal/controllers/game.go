@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"labyrinth/internal/router"
+	"labyrinth/internal/types"
 	"net/http"
 )
 
@@ -32,7 +33,14 @@ func GameConfigHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(gameConfig)
+		responsePayload, _ := json.Marshal(gameConfig)
+		apiResponse := types.ApiResponse{
+			Success: true,
+			Message: "",
+			Payload: responsePayload,
+		}
+
+		err = json.NewEncoder(w).Encode(apiResponse)
 		if err != nil {
 			//http.Error(w, "internal server error", http.StatusInternalServerError)
 			w.WriteHeader(http.StatusInternalServerError)
