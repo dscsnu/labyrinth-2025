@@ -1,242 +1,215 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
-    import { setTeam, type ITeamData } from "$lib/stores/TeamStore";
-    import { addToast } from "$lib/stores/ToastStore";
     import { validateInput, ValidationOptions } from "$lib/directives/validateInput.svelte";
     import { LoadingStore } from "$lib/stores/LoadingStore";
-    import { SupaStore, UserStore } from "$lib/stores/SupabaseStore";
+    import { UserStore } from "$lib/stores/SupabaseStore";
+    import { setTeam, TeamStore, type ITeamData } from "$lib/stores/TeamStore";
+    import { addToast } from "$lib/stores/ToastStore";
+    import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
+    import { onMount } from "svelte";
 
-    let isCreating: boolean = $state(false);
-    let loading: boolean = $state(false);
-    let teamName: string = $state("");
-    let teamCode: string = $state("");
+    const { data } = $props();
+    const { user } = $derived(data);
 
-    const toggleMode = () => {
-        isCreating = !isCreating;
-    };
+    onMount(() => {
+        if (!$TeamStore) {
+            LoadingStore.set(true);
+            try {
+                (async () => {
+                    const params = new URLSearchParams({ user_id: user?.id! })
+                    console.log(params.toString())
+                    const response = await fetchWithAuth(`api/team?${params.toString()}`);
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const data = await response.json();
+                    const teamData: ITeamData = {
+                        id: data.team_id,
+                        name: data.name,
+                        members: [{
+                            id: user?.id!,
+                            name: user?.user_metadata.full_name!,
+                            email: user?.email!,
+                            isReady: false,
+                        }],
+                    };
+
+                    setTeam(teamData);
+                    goto('/team')
+                })();
+            } finally {
+                LoadingStore.set(false);
+            }
+        }
+    })
+
+    type PageState = 'create' | 'join';
+
+    let pageState: PageState = $state('create');
+    let teamName: string = $state('');
+    let teamId: string = $state('');
 
     const createTeam = async () => {
         if (!teamName.trim()) {
             addToast({
-                message: "Please enter a team name",
-                type: "warning",
+                message: 'Please enter a team name',
+                type: 'warning',
             });
             return;
         }
 
         LoadingStore.set(true);
         try {
-            // Using the backend structure which expects "team_name"
-            const res = await fetchWithAuth("api/createteam", {
-                method: "POST",
+            const response = await fetchWithAuth('api/createteam', {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    team_name: teamName,
+                    team_name: teamName
                 }),
             });
 
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                const message =
-                    errorData.message ||
-                    "Failed to create team. Please try again.";
+            if (!response.ok) {
+                const errorData = await response.json();
+                const message = errorData.message || "Failed to create team. Please contact helpers.";
                 addToast({
                     message,
-                    type: "danger",
+                    type: 'danger'
                 });
                 return;
             }
-            const data = await res.json();
 
-            // Create a TeamData object with the response data
+            const data = await response.json();
             const teamData: ITeamData = {
                 id: data.team_id,
-                name: teamName, // Use the name provided by the user
-                allReady: false, // New teams start as not ready
-                members: [], // Initialize with an empty array of members
+                name: teamName,
+                members: [{
+                    id: user?.id!,
+                    name: user?.user_metadata.full_name!,
+                    email: user?.email!,
+                    isReady: false,
+                }],
             };
 
-            // Save the complete team data
             setTeam(teamData);
-
-            goto("/team");
-        } catch (err) {
-            console.error("Error creating team:", err);
+            goto('/team');
+        } catch (e) {
+            console.error(`Error Creating Team > ${e}`);
             addToast({
-                message: "An unexpected error occured. Please try again.",
-                type: "danger",
+                message: 'An unexpected error occured. Please contact helpers.',
+                type: 'danger',
             });
         } finally {
             LoadingStore.set(false);
         }
-    };
+    }
 
     const joinTeam = async () => {
-        if (!teamCode.trim()) {
+        if (!teamId.trim() || teamId.trim().length !== 6) {
             addToast({
-                message: "Please enter a team code.",
-                type: "warning",
+                message: 'Please enter a valid team code.',
+                type: 'warning',
             });
             return;
         }
 
-        LoadingStore.set(true);
+        LoadingStore.set(true)
         try {
-            const res = await fetchWithAuth("api/updateteam", {
-                method: "POST",
+            const response = await fetchWithAuth('api/updateteam', {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    team_id: teamCode,
-                }),
+                body: JSON.stringify({ team_id: teamId }),
             });
 
-            if (!res.ok) {
-                if (
-                    res.status === 500 &&
-                    res.statusText.includes("team is full")
-                ) {
-                    addToast({
-                        message: "This team is already full.",
-                        type: "warning",
-                    });
-                } else {
-                    const errorData = await res.json().catch(() => ({}));
-                    const message =
-                        errorData.message ||
-                        "Failed to join team. Please check the code and try again.";
-                    addToast({
-                        message,
-                        type: "danger",
-                    });
-                }
+            if (!response.ok) {
+                const errorData = await response.json();
+                const message = errorData.message || "Failed to join team. Please contact helpers.";
+                addToast({
+                    message,
+                    type: 'danger'
+                });
                 return;
             }
 
-            // Parse the team data from the response
-            const teamResponse = await res.json();
-            // Create TeamData object using the response from backend
+            const data = await response.json();
             const teamData: ITeamData = {
-                id: teamResponse.id || teamCode,
-                name: teamResponse.name || "Team " + teamCode.substring(0, 4),
-                allReady: teamResponse.is_ready || false,
-                members: teamResponse.members || [],
+                id: data.id,
+                name: data.name,
+                members: data.members.map((m: any) => ({
+                    id: m.id,
+                    name: m.name,
+                    email: m.email,
+                    isReady: m.isReady
+                })),
             };
 
-            // Save the complete team data
             setTeam(teamData);
-
-            // Redirect to team page
-            goto("/team");
-        } catch (err) {
-            console.error("Error joining team:", err);
+            goto('/team');
+        } catch (e) {
+            console.error(`Error Joining Team > ${e}`);
             addToast({
-                message:
-                    "Failed to join team. Please check the code and try again.",
-                type: "danger",
+                message: 'An unexpected error occured. Please contact helpers.',
+                type: 'danger',
             });
         } finally {
             LoadingStore.set(false);
         }
-    };
-
-    const handleSignOut = () => $SupaStore.auth.signOut();
+    }
 </script>
 
-<main class={`h-screen w-screen flex items-center justify-center px-8`}>
-    <div class={`rounded-lg border-2 p-8`}>
-        <h1 class={`text-3xl font-bold text-center mb-6`}>
-            Welcome to Labyrinth
-        </h1>
-
-        <div class={`flex justify-center space-x-4 mb-8`}>
-            <button
-                class={`px-6 py-2 rounded-full border-2 ${!isCreating ? "border-green-500" : "border-black"}`}
-                onclick={() => toggleMode()}
-            >
-                Join Team
-            </button>
-            <button
-                class={`px-6 py-2 rounded-full border-2 ${isCreating ? "border-green-500" : "border-black"}`}
-                onclick={() => toggleMode()}
-            >
-                Create Team
-            </button>
+<main class={`h-screen w-screen flex flex-col justify-center items-center py-4`}>
+    <div class={`w-[90%] flex flex-col p-4 border-2 rounded-lg`}>
+        <div class={`h-fit w-full gap-3 flex justify-center items-center p-4`}>
+            <button class={`px-4 py-2 rounded-lg border-2 ${pageState === 'create' && 'border-green-500'}`} onmousedown={() => pageState = 'create'}>Create Team</button>
+            <button class={`px-4 py-2 rounded-lg border-2 ${pageState === 'join' && 'border-green-500'}`} onmousedown={() => pageState = 'join'}>Join Team</button>
         </div>
 
-        {#if isCreating}
-            <!-- Create Team Form -->
-            <div class={`space-y-4`}>
-                <div>
-                    <label for={`teamName`}>Team Name</label>
-                    <input
-                        type={`text`}
-                        id={`teamName`}
-                        bind:value={teamName}
-                        class={`w-full border-2 border-black p-2 rounded-md`}
-                        placeholder={`Enter your team name`}
-                    />
-                </div>
+        {#if pageState === 'create'}
+            <div class={`flex flex-col gap-4`}>
+                <label for={`team_name`}>Team Name</label>
+                <input
+                    type={`text`}
+                    id={`team_name`}
+                    bind:value={teamName}
+                    class={`w-full border-2 p-2 rounded-lg`}
+                />
 
-                <button
-                    onclick={createTeam}
-                    disabled={loading}
-                    class={`w-full text-black border-2 py-3 rounded-md font-medium flex items-center justify-center`}
-                >
+                <button onclick={() => createTeam()} class={`w-full border-2 p-2 rounded-lg`}>
                     Create Team
                 </button>
             </div>
-        {:else}
-            <!-- Join Team Form -->
-            <div class={`space-y-4`}>
-                <div>
-                    <label for={`teamCode`}>Team Code</label>
-                    <input
-                        type={`text`}
-                        id={`teamCode`}
-                        use:validateInput={{
-                            allowed: [ValidationOptions.NUMERIC],
-                            maxLength: 6,
-                        }}
-                        bind:value={teamCode}
-                        class={`w-full border-2 p-2 rounded-md`}
-                        placeholder={`Enter team code (e.g., 123456)`}
-                    />
-                </div>
+        {:else if pageState === 'join'}
+            <div class={`flex flex-col gap-4`}>
+                <label for={`team_name`}>Team Code</label>
+                <input
+                    type={`text`}
+                    id={`team_name`}
+                    bind:value={teamId}
+                    use:validateInput={{
+                        allowed: [ValidationOptions.NUMERIC],
+                        maxLength: 6
+                    }}
+                    class={`w-full border-2 p-2 rounded-lg`}
+                    placeholder="e.g, 123456"
+                />
 
-                <button
-                    onclick={joinTeam}
-                    disabled={loading}
-                    class={`w-full border-2 py-3 rounded-md font-medium flex items-center justify-center`}
-                >
+                <button onclick={() => joinTeam()} class={`w-full border-2 p-2 rounded-lg`}>
                     Join Team
                 </button>
             </div>
         {/if}
+    </div>
 
-        <div class={`mt-8 text-center text-sm text-gray-400`}>
-            {#if isCreating}
-                Already have a team? <button
-                    class={`text-purple-400 hover:underline`}
-                    onclick={toggleMode}>Join existing team</button
-                >
-            {:else}
-                Need a new team? <button
-                    class={`text-purple-400 hover:underline`}
-                    onclick={toggleMode}>Create one</button
-                >
-            {/if}
-        </div>
 
-        <div class={`flex flex-col justify-center items-center`}>
-            <p>{$UserStore?.email}</p>
-            <button onclick={handleSignOut} class={`border-2 rounded-lg p-2`}>
-                Sign Out
-            </button>
-        </div>
+    <div class={`flex flex-col`}>
+        <p>{$UserStore?.email}</p>
+        <button class={`border-2 px-4 py-2 rounded-lg`}>
+            Sign Out
+        </button>
     </div>
 </main>
