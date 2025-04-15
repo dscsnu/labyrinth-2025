@@ -1,7 +1,7 @@
 import { TOKEN_NAME as DEVICE_TOKEN } from "$lib/stores/DeviceStore";
 import type { Handle } from "@sveltejs/kit";
 
-export const handleDevice: Handle = async({ event, resolve }) => {
+const handleDevice: Handle = async({ event, resolve }) => {
     const response = await resolve(event, {
         transformPageChunk: ({ html }) => {
             const maxAge = 365 * 24 * 60 * 60;
@@ -31,3 +31,5 @@ export const handleDevice: Handle = async({ event, resolve }) => {
 
     return response;
 }
+
+export default handleDevice;

@@ -3,7 +3,6 @@ import json
 import os
 import shutil
 import time
-
 import pygame
 
 os.chdir(os.path.dirname(__file__))
@@ -339,6 +338,24 @@ def approve_current(now):
     f.close()
     print(f"{left_nodes} assigned to {right_name}")
 
+    # Save approved nodes to individual spell file
+    SPELL_JSON_DIR = os.path.abspath("patterns_by_spell")
+    os.makedirs(SPELL_JSON_DIR, exist_ok=True)
+
+    spell_json_path = os.path.join(SPELL_JSON_DIR, f"{right_name}.json")
+    if os.path.exists(spell_json_path):
+        with open(spell_json_path, "r") as sf:
+            spell_data = json.load(sf)
+    else:
+        spell_data = []
+
+    if list(left_nodes) not in spell_data:
+        spell_data.append(list(left_nodes))
+
+    with open(spell_json_path, "w") as sf:
+        json.dump(spell_data, sf, indent=4)
+
+
     # Remember the current index before reloading
     current_index = left_index
 
@@ -365,51 +382,91 @@ def reject_current(now):
 
     left_filename = left_files[left_index]
     left_path = left_paths[left_index]
-    target_path = os.path.join(REJECTED_FOLDER, left_filename)
     left_nodes = left_nodelist[left_index]
     left_nodelist.pop(0)
 
-    # Move instead of copy
+    is_triangle = isinstance(left_nodes, tuple) and len(left_nodes) == 3
+    triangle_key = "triangle"
+
+    # Folder routing
+    if is_triangle:
+        target_dir = os.path.join(OUTPUT_FOLDER, triangle_key)
+    else:
+        target_dir = REJECTED_FOLDER
+
+    os.makedirs(target_dir, exist_ok=True)
+    target_path = os.path.join(target_dir, left_filename)
+
     shutil.move(left_path, target_path)
     action_stack.append(("rejected", left_index, target_path, left_path))
-
-    # prints that the nodes were rejected
     node_stack.append(left_nodes)
-    right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
-    file_exists = False
+
+    print(f"{left_nodes} was rejected")
+
+    # --- spell_patterns.json ---
     try:
-        with open("spell_patterns.json", "r"):
-            file_exists = True
+        with open("spell_patterns.json", "r") as f:
+            data = json.load(f)
     except FileNotFoundError:
-        pass
-    if file_exists:
-        f = open("spell_patterns.json", "r")
-        data = json.load(f)
-        f.close()
+        data = {"valid_patterns": 0}
+
+    if is_triangle:
+        if triangle_key not in data:
+            data[triangle_key] = {"patterns": [], "valid_patterns": 0}
+        if list(left_nodes) not in data[triangle_key]["patterns"]:
+            data[triangle_key]["patterns"].append(list(left_nodes))
+            data[triangle_key]["valid_patterns"] += 1
+            data["valid_patterns"] += 1
+        print(f"{left_nodes} saved to triangle")
+    else:
+        right_name = os.path.splitext(right_files[right_index % len(right_files)])[0]
         if right_name in data:
             if list(left_nodes) in data[right_name]["patterns"]:
                 data[right_name]["patterns"].remove(list(left_nodes))
-                if len(data[right_name]["patterns"]) == 0:
-                    data.pop(right_name, None)
-                else:
-                    data[right_name]["valid_patterns"] -= 1
+                data[right_name]["valid_patterns"] -= 1
                 data["valid_patterns"] -= 1
-        f = open("spell_patterns.json", "w+")
-        f.write(json.dumps(data, indent=4))
-        f.close()
+                if data[right_name]["valid_patterns"] == 0:
+                    del data[right_name]
 
-    # Remember the current index before reloading
+    with open("spell_patterns.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+    # --- patterns_by_spell/triangle.json ---
+    if is_triangle:
+        triangle_json_path = os.path.join("patterns_by_spell", f"{triangle_key}.json")
+        os.makedirs("patterns_by_spell", exist_ok=True)
+
+        try:
+            with open(triangle_json_path, "r") as tf:
+                triangle_data = json.load(tf)
+        except FileNotFoundError:
+            triangle_data = []
+
+        if list(left_nodes) not in triangle_data:
+            triangle_data.append(list(left_nodes))
+
+        with open(triangle_json_path, "w") as tf:
+            json.dump(triangle_data, tf, indent=4)
+
+    # --- rejected.json (ONLY non-triangle patterns) ---
+    if not is_triangle:
+        rejected_json_path = os.path.join("rejected.json")
+        try:
+            with open(rejected_json_path, "r") as rj:
+                rejected_data = json.load(rj)
+        except FileNotFoundError:
+            rejected_data = {"rejected_patterns": []}
+
+        if list(left_nodes) not in rejected_data["rejected_patterns"]:
+            rejected_data["rejected_patterns"].append(list(left_nodes))
+
+        with open(rejected_json_path, "w") as rj:
+            json.dump(rejected_data, rj, indent=4)
+
+    # --- Finalization ---
     current_index = left_index
-
-    # After moving, reload the image list
     reload_images()
-
-    # Stay at the same index after removing, unless we're at the end
-    if current_index >= len(left_paths):
-        left_index = max(0, len(left_paths) - 1)
-    else:
-        left_index = current_index
-
+    left_index = max(0, len(left_paths) - 1) if current_index >= len(left_paths) else current_index
     approval_time = now
     message_text = "Rejected!"
     message_color = RED
@@ -420,33 +477,93 @@ def go_back(now):
     global left_index, approval_time, show_message, message_text, message_color
     if action_stack:
         action, index, target_path, original_path = action_stack.pop()
+        node = node_stack.pop()
+        left_nodelist.insert(0, node)  # Restore the node
+        print(f"{node} was retrieved")
 
-        # adds the nodes back to the original list
-        left_nodelist.insert(0, node_stack.pop())
-
-        print(f"{left_nodelist[0]} was retrieved")
+        # Restore the image file
         if os.path.exists(target_path):
-            # Make sure the directory exists
             os.makedirs(os.path.dirname(original_path), exist_ok=True)
-            # Move the file back to its original location
             shutil.move(target_path, original_path)
-
-            # Reload images after moving it back
             reload_images()
 
-            # Find the index of the restored file
             try:
                 restored_filename = os.path.basename(original_path)
                 restored_index = left_files.index(restored_filename)
                 left_index = restored_index
             except ValueError:
-                # If for some reason we can't find the file, just stay at current index
                 pass
 
-            approval_time = now
-            message_text = "Undone"
-            message_color = GRAY
-            show_message = True
+        # Load spell_patterns.json
+        try:
+            with open("spell_patterns.json", "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {"valid_patterns": 0}
+
+        node_list = list(node)
+
+        if action == "approved":
+            try:
+                spell_name = os.path.basename(os.path.dirname(target_path))
+            except IndexError:
+                spell_name = None
+
+            if spell_name and spell_name in data:
+                if node_list in data[spell_name]["patterns"]:
+                    data[spell_name]["patterns"].remove(node_list)
+                    data[spell_name]["valid_patterns"] -= 1
+                    data["valid_patterns"] -= 1
+                    if data[spell_name]["valid_patterns"] == 0:
+                        del data[spell_name]
+
+                spell_json_path = os.path.join("patterns_by_spell", f"{spell_name}.json")
+                if os.path.exists(spell_json_path):
+                    with open(spell_json_path, "r") as sf:
+                        spell_data = json.load(sf)
+                    if node_list in spell_data:
+                        spell_data.remove(node_list)
+                    with open(spell_json_path, "w") as sf:
+                        json.dump(spell_data, sf, indent=4)
+
+        elif action == "rejected":
+            is_triangle = isinstance(node, tuple) and len(node) == 3
+            triangle_key = "triangle"
+
+            if is_triangle and triangle_key in data:
+                if node_list in data[triangle_key]["patterns"]:
+                    data[triangle_key]["patterns"].remove(node_list)
+                    data[triangle_key]["valid_patterns"] -= 1
+                    data["valid_patterns"] -= 1
+                    if data[triangle_key]["valid_patterns"] == 0:
+                        del data[triangle_key]
+
+                triangle_json_path = os.path.join("patterns_by_spell", f"{triangle_key}.json")
+                if os.path.exists(triangle_json_path):
+                    with open(triangle_json_path, "r") as tf:
+                        triangle_data = json.load(tf)
+                    if node_list in triangle_data:
+                        triangle_data.remove(node_list)
+                    with open(triangle_json_path, "w") as tf:
+                        json.dump(triangle_data, tf, indent=4)
+
+            # Remove from rejected.json
+            rejected_json_path = os.path.join("rejected.json")
+            if os.path.exists(rejected_json_path):
+                with open(rejected_json_path, "r") as rj:
+                    rejected_data = json.load(rj)
+                if node_list in rejected_data["rejected_patterns"]:
+                    rejected_data["rejected_patterns"].remove(node_list)
+                with open(rejected_json_path, "w") as rj:
+                    json.dump(rejected_data, rj, indent=4)
+
+        with open("spell_patterns.json", "w") as f:
+            json.dump(data, f, indent=4)
+
+        approval_time = now
+        message_text = "Undone"
+        message_color = GRAY
+        show_message = True
 
 
 # --- Main Loop ---
@@ -478,12 +595,14 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                with open("patterns_nodes.txt", "w") as f:
+                    f.write(str(left_nodelist))
 
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-                elif event.key == pygame.K_RETURN:
+                if event.key == pygame.K_RETURN or event.key == pygame.K_y:
                     approve_current(now)
+                elif event.key == pygame.K_n:
+                    reject_current(now)
                 elif event.key == pygame.K_LEFT and right_paths:
                     key_held_left = True
                     next_hold_time = now
@@ -493,9 +612,10 @@ def main():
                 elif event.key == pygame.K_f:
                     fullscreen = not fullscreen
                     pygame.display.set_mode(
-                        (WIDTH, HEIGHT),
-                        pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE,
-                    )
+                            (WIDTH, HEIGHT),
+                            pygame.FULLSCREEN if fullscreen else pygame.RESIZABLE,
+                        )
+
 
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
