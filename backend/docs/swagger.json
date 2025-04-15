@@ -4,7 +4,103 @@
         "contact": {}
     },
     "paths": {
-        "/api/createteam": {
+        "/api/game": {
+            "get": {
+                "description": "Gets the config data for the game",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Get GameConfig",
+                "responses": {
+                    "200": {
+                        "description": "Game config retrieved successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/team": {
+            "get": {
+                "description": "Gets the team info, using either team ID or user ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Team"
+                ],
+                "summary": "Get team info",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID of the team",
+                        "name": "team_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID of a user belonging to the team",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Team retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/types.Team"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/team/create": {
             "post": {
                 "security": [
                     {
@@ -75,46 +171,9 @@
                 }
             }
         },
-        "/api/game": {
-            "get": {
-                "description": "Gets the config data for the game",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Game"
-                ],
-                "summary": "Get GameConfig",
-                "responses": {
-                    "200": {
-                        "description": "Game config retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/tean": {
-            "get": {
-                "description": "Gets the team info, using either team ID or user ID",
+        "/api/team/leave": {
+            "post": {
+                "description": "Removes the member sending the request from their team if they are currently in one, otherwise throws an error",
                 "consumes": [
                     "application/json"
                 ],
@@ -124,37 +183,20 @@
                 "tags": [
                     "Team"
                 ],
-                "summary": "Get team info",
+                "summary": "Leave team",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "ID of the team",
-                        "name": "team_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "ID of a user belonging to the team",
-                        "name": "user_id",
-                        "in": "query"
+                        "description": "No payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Team retrieved successfully",
+                        "description": "No payload is returned",
                         "schema": {
-                            "$ref": "#/definitions/types.Team"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
+                            "type": "nil"
                         }
                     },
                     "500": {
@@ -171,7 +213,7 @@
                 }
             }
         },
-        "/api/updateteam": {
+        "/api/team/update": {
             "post": {
                 "description": "Adds members to the team specified in the payload",
                 "consumes": [
@@ -254,7 +296,7 @@
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "is_ready": {
+                                "user_status": {
                                     "type": "boolean"
                                 }
                             }

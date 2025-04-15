@@ -22,8 +22,9 @@ func HandleAll(rtr *router.Router) {
 
 	// POST Routes
 	rtr.HandleFunc("/api/user/status", middleware.Authorized(rtr, Post(TeamMemberStatusUpdateHandler(rtr))))
-	rtr.HandleFunc("/api/createteam", middleware.Authorized(rtr, Post(TeamCreationHandler(rtr))))
-	rtr.HandleFunc("/api/updateteam", middleware.Authorized(rtr, Post(TeamUpdateHandler(rtr))))
+	rtr.HandleFunc("/api/team/create", middleware.Authorized(rtr, Post(TeamCreationHandler(rtr))))
+	rtr.HandleFunc("/api/team/update", middleware.Authorized(rtr, Post(TeamUpdateHandler(rtr))))
+	rtr.HandleFunc("/api/team/leave", middleware.Authorized(rtr, Post(LeaveTeamHandler(rtr))))
 
 	rtr.HandleFunc("/api/eventlistener", middleware.Authorized(rtr, TeamChannelEventHandler(rtr)))
 
