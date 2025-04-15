@@ -57,6 +57,7 @@ func TeamChannelEventHandler(rtr *router.Router) http.HandlerFunc {
 		if err != nil {
 
 			http.Error(w, "internal error occurred", http.StatusInternalServerError)
+			rtr.Logger.Error("internal error", "error", err)
 			return
 		}
 
@@ -73,9 +74,9 @@ func TeamChannelEventHandler(rtr *router.Router) http.HandlerFunc {
 		teamChannel.AddMember(listenerChannel)
 
 		//w.Header().Add("Content-Type", "text/event-stream")
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
+		w.Header().Add("Content-Type", "text/event-stream")
+		w.Header().Add("Cache-Control", "no-cache")
+		w.Header().Add("Connection", "keep-alive")
 		w.WriteHeader(http.StatusOK)
 
 		flusher, ok := w.(http.Flusher)
