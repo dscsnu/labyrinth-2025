@@ -13,6 +13,12 @@
     --font-weight-bold : 700;
     --font-weight-extrabold : 800;
     --font-weight-black : 900;
+
+    --color-labyrinth-red: #BB1824;
+    --color-labyrinth-blue: #00BBFF;
+    --color-labyrinth-yellow: #FFD600;
+    --color-labyrinth-green: #00FF9D;
+    --color-labyrinth-purple: #9C27B0;
 }
 
 @font-face {
