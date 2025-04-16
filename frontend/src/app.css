@@ -1,1 +1,64 @@
 @import 'tailwindcss';
+
+@theme {
+    --font-raleway: 'Raleway', sans-serif;
+    --font-neue-machina: 'NeueMachina', sans-serif;
+
+    --font-weight-thin: 100;
+    --font-weight-extralight : 200;
+    --font-weight-light : 300;
+    --font-weight-regular : 400;
+    --font-weight-medium : 500;
+    --font-weight-semibold : 600;
+    --font-weight-bold : 700;
+    --font-weight-extrabold : 800;
+    --font-weight-black : 900;
+
+    --color-labyrinth-red: #BB1824;
+    --color-labyrinth-blue: #00BBFF;
+    --color-labyrinth-yellow: #FFD600;
+    --color-labyrinth-green: #00FF9D;
+    --color-labyrinth-purple: #9C27B0;
+}
+
+@font-face {
+    font-family: "NeueMachina";
+    font-weight: 100;
+    font-style: normal;
+    src: url('/assets/fonts/NeueMachina/PPNeueMachina-InktrapLight.otf') format('opentype');
+}
+
+@font-face {
+    font-family: "NeueMachina";
+    font-weight: 100;
+    font-style: italic;
+    src: url('/assets/fonts/NeueMachina/PPNeueMachina-InktrapLightItalic.otf') format('opentype');
+}
+
+@font-face {
+    font-family: "NeueMachina";
+    font-weight: 400;
+    font-style: normal;
+    src: url('/assets/fonts/NeueMachina/PPNeueMachina-InktrapRegular.otf') format('opentype');
+}
+
+@font-face {
+    font-family: "NeueMachina";
+    font-weight: 400;
+    font-style: italic;
+    src: url('/assets/fonts/NeueMachina/PPNeueMachina-InktrapRegularItalic.otf') format('opentype');
+}
+
+@font-face {
+    font-family: "NeueMachina";
+    font-weight: 900;
+    font-style: normal;
+    src: url('/assets/fonts/NeueMachina/PPNeueMachina-InktrapUltrabold.otf') format('opentype');
+}
+
+@font-face {
+    font-family: "NeueMachina";
+    font-weight: 900;
+    font-style: italic;
+    src: url('/assets/fonts/NeueMachina/PPNeueMachina-InktrapUltraboldItalic.otf') format('opentype');
+}
