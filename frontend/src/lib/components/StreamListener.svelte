@@ -2,11 +2,10 @@
     import { PUBLIC_BACKEND_URL, PUBLIC_STREAM_URL } from "$env/static/public";
     import { JwtTokenStore } from "$lib/stores/JwtTokenStore";
     import { TeamStore } from "$lib/stores/TeamStore";
-    import { EventSourcePolyfill } from "event-source-polyfill";
     import { onMount } from "svelte";
     import { get } from "svelte/store";
 
-    let eventSource: EventSourcePolyfill | null = $state(null);
+    let eventSource: EventSource | null = $state(null);
 
     const cleanup = () => {
         if (eventSource) {
@@ -21,11 +20,7 @@
         const cleanedEndpoint = PUBLIC_STREAM_URL.replace(/^\/+/, '');
         const jwt = get(JwtTokenStore);
 
-        eventSource = new EventSourcePolyfill(`${cleanedUrl}/${cleanedEndpoint}`, {
-            headers: {
-                'Authorization': `Bearer ${jwt}`
-            }
-        });
+        eventSource = new EventSource(`${cleanedUrl}/${cleanedEndpoint}?team_id=${$TeamStore?.id}`);
 
         eventSource.onmessage = (event) => {
             alert(event.data);
