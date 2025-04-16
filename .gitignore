@@ -6,8 +6,4 @@ node_modules
 # macOS Specific
 .DS_Store
 **/.DS_Store
-# algorithm/patterns_output
 algorithm/.venv
-# algorithm/sorted_output
-# algorithm/spell_patterns.json
-# algorithm/rejected
