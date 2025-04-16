@@ -26,10 +26,10 @@ export async function POST({ request }) {
         }
         let route = "/";
         if (decoded.payload.startsWith('location:')) {
-            route = "/api/scan/location";
+            route = `/api/scan/location?code=${decoded.payload.substring(9)}`;
         } 
         else if (decoded.payload.startsWith('qte:')) {
-            route = "/api/scan/qte";
+            route = `/api/scan/qte?code=${decoded.payload.substring(4)}`;
         }        
 
         return json({
