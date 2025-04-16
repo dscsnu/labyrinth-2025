@@ -17,10 +17,12 @@
     const connect = () => {
         console.log('Attempting Connection');
         const cleanedUrl = PUBLIC_BACKEND_URL.replace(/\/+$/, '');
-        const cleanedEndpoint = PUBLIC_STREAM_URL.replace(/^\/+/, '');
-        const jwt = get(JwtTokenStore);
+        const params = new URLSearchParams({ team_id: $TeamStore!.id })
+        eventSource = new EventSource(`${cleanedUrl}/api/eventlistener?${params.toString()}`);
 
-        eventSource = new EventSource(`${cleanedUrl}/${cleanedEndpoint}?team_id=${$TeamStore?.id}`);
+        eventSource.onopen = (event) => {
+            alert('Connection Established')
+        }
 
         eventSource.onmessage = (event) => {
             alert(event.data);
