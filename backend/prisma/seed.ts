@@ -94,6 +94,38 @@ async function createUserTriggers() {
     }
 }
 
+async function createUpdatedAtTriggers() {
+    const queries = [
+        Prisma.sql`
+            CREATE OR REPLACE FUNCTION fnUpdateUpdatedAt()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            SECURITY DEFINER
+            SET search_path = ''
+            AS $$
+            BEGIN
+                NEW.updated_at = now();
+                RETURN NEW;
+            END;
+            $$
+        `,
+        Prisma.sql`
+            CREATE TRIGGER trUpdateUpdatedAtTeamLevelAssignment
+                BEFORE UPDATE ON teamlevelassignment
+                FOR EACH ROW EXECUTE PROCEDURE fnUpdateUpdatedAt();
+        `,
+        Prisma.sql`
+            CREATE TRIGGER trUpdateUpdatedAtTeamSpellAttempt
+                BEFORE UPDATE ON teamspellattempt
+                FOR EACH ROW EXECUTE PROCEDURE fnUpdateUpdatedAt();
+        `
+    ];
+
+    for (const query of queries) {
+        await prisma.$executeRaw(query);
+    }
+}
+
 async function seedLevelTable() {
     const levels = [
         { id: 1, name: 'Ex 1', targetScore: 10 },
@@ -129,17 +161,17 @@ async function seedSpellTable() {
 
 async function seedLocationTable() {
     const locationsWithoutId = [
-        { name: 'Tower 6 FruitShop', latitude: 0, longitude: 0 },
-        { name: 'Research Block', latitude: 0, longitude: 0 },
-        { name: 'A Block', latitude: 0, longitude: 0 },
-        { name: 'CnD Atrium', latitude: 0, longitude: 0 },
-        { name: 'G Block', latitude: 0, longitude: 0 },
-        { name: 'Shopping Arcade', latitude: 0, longitude: 0 },
-        { name: 'UAC', latitude: 0, longitude: 0 },
-        { name: 'Cluster 1', latitude: 0, longitude: 0 },
-        { name: 'Dibang Cycle Shop', latitude: 0, longitude: 0 },
-        { name: 'Dining Hall 3', latitude: 0, longitude: 0 },
-        { name: 'Indoor Sports Complex', latitude: 0, longitude: 0 },
+        { name: 'Tower 6 FruitShop', latitude: 28.52836141567019, longitude: 77.57777379378554 },
+        { name: 'Research Block', latitude: 28.527471246410833, longitude: 77.57890336254033 },
+        { name: 'A Block', latitude: 28.52692140098942, longitude: 77.57706407672785 },
+        { name: 'CnD Atrium', latitude: 28.525519393291614, longitude: 77.57653461322104 },
+        { name: 'G Block', latitude: 28.52799850829152, longitude: 77.5749038301257 },
+        { name: 'Shopping Arcade', latitude: 28.52723498480195, longitude: 77.57292972432113 },
+        { name: 'UAC', latitude: 28.523582249548888, longitude: 77.57437275274097 },
+        { name: 'Cluster 1', latitude: 28.52440905859402, longitude: 77.57308311017349 },
+        { name: 'Dibang Cycle Shop', latitude: 28.525235547619324, longitude: 77.57072373132858 },
+        { name: 'Dining Hall 3', latitude: 28.52316003957018, longitude: 77.5696713403205 },
+        { name: 'Indoor Sports Complex', latitude: 28.521496152454514, longitude: 77.5712575598366 },
     ];
 
     const locations = locationsWithoutId.map(l => {
@@ -155,6 +187,10 @@ async function seedLocationTable() {
 async function main() {
     await createUserTriggers()
         .then(() => console.log('✅ userTriggers created'))
+        .catch((e) => console.error(`🚨 ${e}`));
+
+    await createUpdatedAtTriggers()
+        .then(() => console.log('✅ updatedAtTriggers created'))
         .catch((e) => console.error(`🚨 ${e}`));
 
     await seedLevelTable()

@@ -55,6 +55,7 @@ CREATE TABLE "teamlevelassignment" (
     "sequence" INTEGER NOT NULL,
     "current_score" INTEGER NOT NULL DEFAULT 0,
     "is_finished" BOOLEAN NOT NULL DEFAULT false,
+    "updated_at" TIMESTAMP(3),
 
     CONSTRAINT "teamlevelassignment_pkey" PRIMARY KEY ("team_id","level_id")
 );
@@ -113,6 +114,7 @@ CREATE TABLE "teamspellattempt" (
     "spell_id" UUID NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
+    "updated_at" TIMESTAMP(3),
 
     CONSTRAINT "teamspellattempt_pkey" PRIMARY KEY ("id")
 );
@@ -124,6 +126,34 @@ CREATE TABLE "teamlocationprogress" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
 
     CONSTRAINT "teamlocationprogress_pkey" PRIMARY KEY ("attempt_id","location_id")
+);
+
+-- CreateTable
+CREATE TABLE "qte" (
+    "id" VARCHAR(6) NOT NULL,
+    "name" TEXT NOT NULL,
+    "scanned" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "qte_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "qtescan" (
+    "qteId" VARCHAR(6) NOT NULL,
+    "teamId" VARCHAR(6) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
+
+    CONSTRAINT "qtescan_pkey" PRIMARY KEY ("qteId","teamId")
+);
+
+-- CreateTable
+CREATE TABLE "qrlog" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL,
+    "log_info" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
+
+    CONSTRAINT "qrlog_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -140,6 +170,9 @@ CREATE UNIQUE INDEX "teamlevelassignment_team_id_sequence_key" ON "teamlevelassi
 
 -- CreateIndex
 CREATE UNIQUE INDEX "teamspellattempt_team_id_active_key" ON "teamspellattempt"("team_id", "active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "qtescan_qteId_key" ON "qtescan"("qteId");
 
 -- AddForeignKey
 ALTER TABLE "teammember" ADD CONSTRAINT "teammember_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "team"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -179,3 +212,12 @@ ALTER TABLE "teamlocationprogress" ADD CONSTRAINT "teamlocationprogress_attempt_
 
 -- AddForeignKey
 ALTER TABLE "teamlocationprogress" ADD CONSTRAINT "teamlocationprogress_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "location"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "qtescan" ADD CONSTRAINT "qtescan_qteId_fkey" FOREIGN KEY ("qteId") REFERENCES "qte"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "qtescan" ADD CONSTRAINT "qtescan_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "qrlog" ADD CONSTRAINT "qrlog_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "userprofile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
