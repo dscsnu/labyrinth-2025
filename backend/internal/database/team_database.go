@@ -85,6 +85,14 @@ func (pd *PostgresDriver) LeaveTeamMember(ctx context.Context, teamId string, us
 }
 
 func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types.Team, error) {
+	cacheKey := "team:" + teamId
+
+	if cachedData, found := pd.cache.Get(cacheKey); found {
+		if team, ok := cachedData.(types.Team); ok {
+			return team, nil
+		}
+	}
+
 	team := types.Team{}
 
 	err := pd.pool.QueryRow(ctx, "SELECT id, name FROM team WHERE team.id=$1", teamId).Scan(&team.ID, &team.Name)
@@ -114,8 +122,10 @@ func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types
 	}
 
 	team.Members = members
-	return team, nil
 
+	pd.cache.Set(cacheKey, team, 5*time.Minute)
+
+	return team, nil
 }
 
 func (pd *PostgresDriver) GetTeamByUserId(ctx context.Context, userId uuid.UUID) (types.Team, error) {

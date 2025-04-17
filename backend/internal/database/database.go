@@ -3,7 +3,9 @@ package database
 import (
 	"context"
 	"crypto/rand"
+	"labyrinth/internal/cache"
 	"math/big"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -30,7 +32,8 @@ func genRand() (string, error) {
 }
 
 type PostgresDriver struct {
-	pool *pgxpool.Pool
+	pool  *pgxpool.Pool
+	cache *cache.Cache
 }
 
 func (pd *PostgresDriver) Close() {
@@ -42,5 +45,11 @@ func CreatePostgresDriver(connectionURL string) (*PostgresDriver, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PostgresDriver{pool: pool}, nil
+
+	c := cache.New(5*time.Minute, 10*time.Minute)
+
+	return &PostgresDriver{
+		pool:  pool,
+		cache: c,
+	}, nil
 }
