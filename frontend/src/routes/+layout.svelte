@@ -11,7 +11,7 @@
 	import Toast from "$lib/components/Toast.svelte";
 	import { LoadingStore } from "$lib/stores/LoadingStore";
 	import Loading from "$lib/components/Loading.svelte";
-    import StreamListener from "$lib/components/StreamListener.svelte";
+    import SpellSymbols from "$lib/components/SpellSymbols.svelte";
 
 	let { data, children } = $props();
 	let { supabase, session, user } = $derived(data);
@@ -57,8 +57,9 @@
 		)}
 />
 
-{#if $device === "mobile" || PUBLIC_ENVIRONMENT === "development"}
+{#if $device === "mobile" || PUBLIC_ENVIRONMENT !== "development"}
 	{@render children()}
+	<SpellSymbols />
 {:else}
 	<MobileOnly />
 {/if}
