@@ -177,7 +177,7 @@ model TeamLocationProgress {
 model QTE {
   id      String   @id @db.VarChar(6)
   name    String
-  scanned Boolean  @default(false)
+  isScanned Boolean  @default(false) @map("is_scanned")
   //
   scan    QTEScan?
 
@@ -185,8 +185,8 @@ model QTE {
 }
 
 model QTEScan {
-  qteId     String   @unique @db.VarChar(6)
-  teamId    String   @db.VarChar(6)
+  qteId     String   @unique @db.VarChar(6) @map("qte_id")
+  teamId    String   @db.VarChar(6) @map("team_id")
   createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
   //
   qte       QTE      @relation(fields: [qteId], references: [id])
