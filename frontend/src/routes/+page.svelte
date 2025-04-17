@@ -58,3 +58,8 @@
         alt={`SplashScreen`}
     />
 {/if}
+
+<svelte:head>
+    <title>Labyrinth</title>
+    <meta name="description" content="Dive into Labyrinth 2025 — a Scott Pilgrim-inspired treasure hunt across Shiv Nadar University. Battle riddles, defeat evil exes, and race for a ₹50,000 prize. Register now!">
+</svelte:head>
