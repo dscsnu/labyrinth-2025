@@ -28,6 +28,7 @@ model UserProfile {
   createdAt DateTime    @default(dbgenerated("now()")) @map("created_at")
   //
   member    TeamMember?
+  qrLog     QRLog[]
 
   @@map("userprofile")
 }
@@ -40,6 +41,7 @@ model Team {
   levelAssignment TeamLevelAssignment[]
   spellAssignment TeamSpellAssignment[]
   spellAttempts   TeamSpellAttempt[]
+  qteScan         QTEScan[]
 
   @@map("team")
 }
@@ -69,14 +71,15 @@ model Level {
 }
 
 model TeamLevelAssignment {
-  teamId       String  @map("team_id") @db.VarChar(6)
-  levelId      Int     @map("level_id")
+  teamId       String    @map("team_id") @db.VarChar(6)
+  levelId      Int       @map("level_id")
   sequence     Int
-  currentScore Int     @default(0) @map("current_score")
-  isFinished   Boolean @default(false) @map("is_finished")
+  currentScore Int       @default(0) @map("current_score")
+  isFinished   Boolean   @default(false) @map("is_finished")
+  updatedAt    DateTime? @map("updated_at")
   //
-  team         Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  level        Level   @relation(fields: [levelId], references: [id])
+  team         Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  level        Level     @relation(fields: [levelId], references: [id])
 
   @@id([teamId, levelId])
   @@unique([teamId, sequence])
@@ -88,7 +91,7 @@ model Spell {
   rewardScore     Int                   @map("reward_score")
   numVertex       Int                   @map("num_vertex")
   cooldown        Int
-  imageUrl        String? @map("image_url")
+  imageUrl        String?               @map("image_url")
   //
   pattern         Pattern[]
   teamAssignment  TeamSpellAssignment[]
@@ -149,6 +152,7 @@ model TeamSpellAttempt {
   spellId          String                 @map("spell_id") @db.Uuid
   active           Boolean                @default(true)
   createdAt        DateTime               @default(dbgenerated("now()")) @map("created_at")
+  updatedAt        DateTime?              @map("updated_at")
   //
   team             Team                   @relation(fields: [teamId], references: [id])
   spell            Spell                  @relation(fields: [spellId], references: [id])
@@ -168,4 +172,37 @@ model TeamLocationProgress {
 
   @@id([attemptId, locationId])
   @@map("teamlocationprogress")
+}
+
+model QTE {
+  id      String   @id @db.VarChar(6)
+  name    String
+  scanned Boolean  @default(false)
+  //
+  scan    QTEScan?
+
+  @@map("qte")
+}
+
+model QTEScan {
+  qteId     String   @unique @db.VarChar(6)
+  teamId    String   @db.VarChar(6)
+  createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
+  //
+  qte       QTE      @relation(fields: [qteId], references: [id])
+  team      Team     @relation(fields: [teamId], references: [id])
+
+  @@id([qteId, teamId])
+  @@map("qtescan")
+}
+
+model QRLog {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  logInfo   String      @map("log_info")
+  createdAt DateTime    @default(dbgenerated("now()")) @map("created_at")
+  //
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("qrlog")
 }
