@@ -1,6 +1,7 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import { LoadingStore } from "$lib/stores/LoadingStore";
-    import { getPlayerReadyState, setPlayerReadyState, TeamStore } from "$lib/stores/TeamStore";
+    import { clearTeam, getPlayerReadyState, setPlayerReadyState, TeamStore } from "$lib/stores/TeamStore";
     import { addToast } from "$lib/stores/ToastStore";
     import { fetchWithAuth } from "$lib/utils/fetchWithAuth";
 
@@ -44,6 +45,36 @@
             LoadingStore.set(false);
         }
     }
+
+    const handleTeamLeave = async () => {
+        LoadingStore.set(true)
+        try {
+            const response = await fetchWithAuth('api/team/leave', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.status === 200) {
+                clearTeam();
+                goto('/new');
+            } else {
+                addToast({
+                    message: 'Error leaving team.',
+                    type: 'warning',
+                });
+            }
+        } catch (e) {
+            console.error(`Error Leaving Team > ${e}`);
+            addToast({
+                message: 'An unexpected error occured. Please contact helpers.',
+                type: 'danger',
+            });
+        } finally {
+            LoadingStore.set(false)
+        }
+    }
 </script>
 
 <main class={`h-screen w-screen flex flex-col justify-center items-center p-4`}>
@@ -78,7 +109,7 @@
             {/if}
         </button>
 
-        <button class={`border-2 rounded-lg py-4`}>
+        <button onclick={() => handleTeamLeave()} class={`border-2 rounded-lg py-4`}>
             Leave Team
         </button>
     </div>

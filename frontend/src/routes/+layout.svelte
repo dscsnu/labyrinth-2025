@@ -72,6 +72,3 @@
 {#if $LoadingStore}
 	<Loading />
 {/if}
-
-
-<StreamListener />
