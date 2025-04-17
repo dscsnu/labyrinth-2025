@@ -1,14 +1,15 @@
+<!-- TODO: Edit component to not try on TeamStore update but poll for connection -->
+
 <script lang="ts">
-    import { PUBLIC_BACKEND_URL, PUBLIC_STREAM_URL } from "$env/static/public";
-    import { JwtTokenStore } from "$lib/stores/JwtTokenStore";
+    import { PUBLIC_BACKEND_URL } from "$env/static/public";
     import { TeamStore } from "$lib/stores/TeamStore";
     import { onMount } from "svelte";
-    import { get } from "svelte/store";
 
     let eventSource: EventSource | null = $state(null);
 
     const cleanup = () => {
         if (eventSource) {
+            alert('closing event source');
             eventSource.close();
             eventSource = null;
         }
