@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"labyrinth/internal/cache"
 	"labyrinth/internal/channel"
 	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
 	"log/slog"
 	"net/http"
-
-	"github.com/google/uuid"
+	"time"
 )
 
 // TeamCreationHandler creates a new team and assigns default levels.
@@ -88,6 +88,27 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 			rtr.Logger.Error("internal error assigning levels", "error", err.Error())
 			return
 		}
+
+		user, err := rtr.State.DB.GetUser(context.Background(), userEmail)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
+			rtr.Logger.Error("internal error fetching user from db", "error", err)
+		}
+		rtr.State.CM.Set(cache.UserProfile, user.ID.String(), user, 60*time.Minute)
+
+		team, err := rtr.State.DB.GetTeamByID(context.Background(), teamId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "internal server error",
+			})
+			rtr.Logger.Error("internal error fetching db at DB create", "error", err)
+		}
+
+		rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
 
 		teamChannel := channel.NewChannel()
 		rtr.State.ChanPool.AddChannel(teamId, teamChannel)
@@ -230,25 +251,10 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 		var err error
 
 		if teamId != "" {
-			team, err = rtr.State.DB.GetTeamByID(context.Background(), teamId)
+			//team, err = rtr.State.DB.GetTeamByID(context.Background(), teamId)
+			team, err = rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, teamId)
 		} else if userId != "" {
-			parsedId, parseErr := uuid.Parse(userId)
-			if parseErr != nil {
-				//http.Error(w, "invalid player_id format", http.StatusBadRequest)
-				//w.WriteHeader(http.StatusBadRequest)
-				//json.NewEncoder(w).Encode(map[string]string{
-				//	"error": "player id format is invalid, should be uuid string",
-				//})
-
-				apiResponse := types.ApiResponse{
-					Success: false,
-					Message: "player id format is invalid, should be uuid string",
-					Payload: nil,
-				}
-				json.NewEncoder(w).Encode(apiResponse)
-
-			}
-			team, err = rtr.State.DB.GetTeamByUserId(context.Background(), parsedId)
+			team, err = rtr.State.CM.GetTeamByUserIdCache(context.Background(), rtr.State.DB, userId)
 		}
 
 		if err != nil {
@@ -261,11 +267,23 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
+		//responsePayload, err := json.Marshal(team)
+		//if err != nil {
+		//	rtr.Logger.Error("error marshaling team to json", "error", err)
+		//}
+
+		//apiResponse := types.ApiResponse{
+		//	Success: false,
+		//	Message: "",
+		//	Payload: responsePayload,
+		//}
+
 		if err := json.NewEncoder(w).Encode(team); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{
 				"error": "internal server error",
 			})
+			rtr.Logger.Error("failed to encode response into json", "error", err)
 			//http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		}
 	})

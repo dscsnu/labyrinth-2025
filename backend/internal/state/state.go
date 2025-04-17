@@ -1,6 +1,7 @@
 package state
 
 import (
+	"labyrinth/internal/cache"
 	"labyrinth/internal/channel"
 	"labyrinth/internal/database"
 	"labyrinth/internal/jwtauth"
@@ -11,6 +12,7 @@ type State struct {
 	JwtSession *jwtauth.JWTSession
 	DB         *database.PostgresDriver
 	ChanPool   *channel.ChannelPool
+	CM         *cache.CacheManager
 }
 
 func NewState() *State {
@@ -44,6 +46,13 @@ func (s *State) WithPostgresDriver(connectionURL string) *State {
 func (s *State) WithChannelPool(chanpool *channel.ChannelPool) *State {
 
 	s.ChanPool = chanpool
+	return s
+
+}
+
+func (s *State) WithCacheManager(CM *cache.CacheManager) *State {
+
+	s.CM = CM
 	return s
 
 }

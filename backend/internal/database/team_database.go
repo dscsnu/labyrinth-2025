@@ -85,13 +85,13 @@ func (pd *PostgresDriver) LeaveTeamMember(ctx context.Context, teamId string, us
 }
 
 func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types.Team, error) {
-	cacheKey := "team:" + teamId
+	//cacheKey := "team:" + teamId
 
-	if cachedData, found := pd.cache.Get(cacheKey); found {
-		if team, ok := cachedData.(types.Team); ok {
-			return team, nil
-		}
-	}
+	//if cachedData, found := pd.cache.Get(cacheKey); found {
+	//	if team, ok := cachedData.(types.Team); ok {
+	//		return team, nil
+	//	}
+	//}
 
 	team := types.Team{}
 
@@ -123,7 +123,7 @@ func (pd *PostgresDriver) GetTeamByID(ctx context.Context, teamId string) (types
 
 	team.Members = members
 
-	pd.cache.Set(cacheKey, team, 5*time.Minute)
+	//pd.cache.Set(cacheKey, team, 5*time.Minute)
 
 	return team, nil
 }
