@@ -6,7 +6,7 @@ export enum ValidationOptions {
     NUMERIC = '0123456789',
     SPACE = ' ',
     SPECIAL_CHARACTERS = ',.!?;:_<>',
-    ALL = ' ,.!?;:_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    ALL = ' ,.!?;:_<>0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 }
 
 export interface IValidationConfig {
