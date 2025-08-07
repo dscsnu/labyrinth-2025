@@ -9,6 +9,7 @@ import (
 	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
+	"labyrinth/internal/controllers/db_queue"
 	"log/slog"
 	"net/http"
 	"time"
@@ -177,27 +178,59 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 
 		}
 
-		if err := rtr.State.DB.AddTeamMember(context.Background(), t.TeamId, profile.ID); err != nil {
-			http.Error(w, "the team is full", http.StatusInternalServerError)
-			return
-		}
+		queueReq := queue.TeamQueueRequest{
+            Type:      "join",
+            UserID:    profile.ID,
+            TeamID:    t.TeamId,
+            UserEmail: userEmail,
+            Handler: func() error {
+                rtr.Logger.Info("Executing join team from queue", 
+                    "user_id", profile.ID, 
+                    "team_id", t.TeamId)
+                
+                err := rtr.State.DB.AddTeamMember(context.Background(), t.TeamId, profile.ID)
+                if err != nil {
+                    return fmt.Errorf("database error joining team: %w", err)
+                }
+                
+                team, err := rtr.State.DB.GetTeamByID(context.Background(), t.TeamId)
+                if err != nil {
+                    return fmt.Errorf("error fetching team after join: %w", err)
+                }
+                
+                rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
+                rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
+                
+                teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
+                if teamChannel != nil {
+                    teamChannel.Broadcast(protocol.Packet{
+                        Type: "BackgroundMessage", 
+                        BackgroundMessage: protocol.BackgroundMessage{
+                            Relay: fmt.Sprintf("teamId:%s -> %s joined the team", team.ID, profile.Email), 
+                            MsgContext: "team_join",
+                        },
+                    })
+                }
+                
+                rtr.Logger.Info("Join team completed successfully", 
+                    "user_id", profile.ID, 
+                    "team_id", t.TeamId)
+                
+                return nil
+            },
+        }
+		queue.AddToQueue(queueReq)
 
-		team, err := rtr.State.DB.GetTeamByID(context.Background(), t.TeamId)
-		if err != nil {
-			http.Error(w, "error fetching the team", http.StatusInternalServerError)
-			rtr.Logger.Error("internal error while getting team", "error", err.Error())
-			return
-		}
+		// payload, _ := json.Marshal(team)
 
-		teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
-		teamChannel.Broadcast(protocol.Packet{Type: "BackgroundMessage", BackgroundMessage: protocol.BackgroundMessage{Relay: fmt.Sprintf("teamId:%s -> %s joined the team", team.ID, profile.Email), MsgContext: "channel_creation"}})
-
-		payload, _ := json.Marshal(team)
+		rtr.Logger.Info("Join team request queued successfully", 
+            "user_id", profile.ID, 
+            "team_id", t.TeamId)
 
 		apiResponse := types.ApiResponse{
 			Success: true,
 			Message: "Member added to team successfully!",
-			Payload: payload,
+			Payload: nil , //was originally sending back payload, team as JSON.. have to check if this is used in frontend
 		}
 
 		if err := json.NewEncoder(w).Encode(apiResponse); err != nil {
@@ -327,16 +360,19 @@ func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
-		err = rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal server error", "error", err)
-			return
-		}
+		queueReq := queue.TeamQueueRequest{
+            Type:      "leave",
+            UserID:    user.ID,
+            TeamID:    team.ID,
+            UserEmail: userEmail,
+            Handler: func() error {
+                return rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
+            },
+        }
 
+        queue.AddToQueue(queueReq)
+
+		//sending instant response beforing getting response back from DB so we dont crash the db yay
 		apiResponse := types.ApiResponse{
 			Success: true,
 			Message: "Successfully left team!",
