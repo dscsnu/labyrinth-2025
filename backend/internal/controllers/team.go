@@ -204,9 +204,6 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			rtr.State.CM.Set(cache.TeamUserIDIndex, profile.ID.String(), updatedTeam, 30*time.Minute)
 		}
 
-		rtr.State.CM.Set(cache.UserProfile, profile.Email, profile, 60*time.Minute)
-		rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
-
 		queueReq := queue.TeamQueueRequest{
 			Type:      "join",
 			UserID:    profile.ID,
@@ -228,7 +225,6 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 				}
 
 				rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
-				rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
 
 				teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
 				if teamChannel != nil {
@@ -369,25 +365,49 @@ func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
 
 		userEmail := r.Context().Value("email").(string)
 
-		user, err := rtr.State.DB.GetUser(context.Background(), userEmail)
+		user, err := rtr.State.CM.GetUserByEmailCache(context.Background(), rtr.State.DB, userEmail)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal server error", "error", err)
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "failed to get user profile",
+				Payload: nil,
+			}
+			json.NewEncoder(w).Encode(apiResponse)
+			rtr.Logger.Error("failed to get user from cache", "error", err)
 			return
 		}
 
-		team, err := rtr.State.DB.GetTeamByUserId(context.Background(), user.ID)
+		team, err := rtr.State.CM.GetTeamByUserIdCache(context.Background(), rtr.State.DB, user.ID.String())
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal server error", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "user not in any team",
+				Payload: nil,
+			}
+			json.NewEncoder(w).Encode(apiResponse)
+			rtr.Logger.Error("user not in team", "user_id", user.ID, "error", err)
 			return
 		}
+
+		rtr.Logger.Info("Leave team request - optimistic cache update",
+			"user_id", user.ID,
+			"team_id", team.ID)
+
+		updatedTeam := team
+		for i, member := range updatedTeam.Members {
+			if member.ID == user.ID {
+				updatedTeam.Members = append(updatedTeam.Members[:i], updatedTeam.Members[i+1:]...)
+				break
+			}
+		}
+
+		rtr.State.CM.Set(cache.Team, updatedTeam.ID, updatedTeam, 30*time.Minute)
+		for _, member := range updatedTeam.Members {
+			rtr.State.CM.Set(cache.TeamUserIDIndex, member.ID.String(), updatedTeam, 30*time.Minute)
+		}
+		rtr.State.CM.Delete(cache.TeamUserIDIndex, user.ID.String())
 
 		queueReq := queue.TeamQueueRequest{
 			Type:      "leave",
@@ -395,17 +415,58 @@ func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
 			TeamID:    team.ID,
 			UserEmail: userEmail,
 			Handler: func() error {
-				return rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
+				rtr.Logger.Info("Executing leave team from queue",
+					"user_id", user.ID,
+					"team_id", team.ID)
+
+				err := rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
+				if err != nil {
+					rtr.State.CM.Delete(cache.Team, team.ID)
+					rtr.State.CM.Delete(cache.TeamUserIDIndex, user.ID.String())
+					return fmt.Errorf("database error leaving team: %w", err)
+				}
+
+				finalTeam, err := rtr.State.DB.GetTeamByID(context.Background(), team.ID)
+				if err != nil {
+					rtr.Logger.Error("error fetching team after leave", "error", err)
+				} else {
+					rtr.State.CM.Set(cache.Team, finalTeam.ID, finalTeam, 30*time.Minute)
+					for _, member := range finalTeam.Members {
+						rtr.State.CM.Set(cache.TeamUserIDIndex, member.ID.String(), finalTeam, 30*time.Minute)
+					}
+				}
+
+				teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
+				if teamChannel != nil {
+					teamChannel.Broadcast(protocol.Packet{
+						Type: "BackgroundMessage",
+						BackgroundMessage: protocol.BackgroundMessage{
+							Relay:      fmt.Sprintf("teamId:%s -> %s left the team", team.ID, user.Email),
+							MsgContext: "team_leave",
+						},
+					})
+				}
+
+				rtr.Logger.Info("Leave team completed successfully",
+					"user_id", user.ID,
+					"team_id", team.ID)
+
+				return nil
 			},
 		}
 
 		queue.AddToQueue(queueReq)
 
-		//sending instant response beforing getting response back from DB so we dont crash the db yay
+		payload, _ := json.Marshal(updatedTeam)
+
+		rtr.Logger.Info("Leave team request queued successfully",
+			"user_id", user.ID,
+			"team_id", team.ID)
+
 		apiResponse := types.ApiResponse{
 			Success: true,
 			Message: "Successfully left team!",
-			Payload: nil,
+			Payload: payload,
 		}
 
 		json.NewEncoder(w).Encode(apiResponse)
