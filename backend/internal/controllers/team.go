@@ -167,8 +167,26 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			return
 
 		}
+        profile, err := rtr.State.CM.GetUserByEmailCache(context.Background(), rtr.State.DB, userEmail)
+        if err != nil {
+            http.Error(w, "internal error occurred", http.StatusInternalServerError)
+            rtr.Logger.Error("failed to get user from cache", "error", err.Error())
+            return
+        }
 
-		profile, err := rtr.State.DB.GetUser(context.Background(), userEmail)
+        team, err := rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, t.TeamId)
+        if err != nil {
+            http.Error(w, "team not found", http.StatusBadRequest)
+            rtr.Logger.Error("team not found in cache", "team_id", t.TeamId, "error", err)
+            return
+        }
+
+        rtr.Logger.Info("Join team request - updating cache immediately", 
+            "user_id", profile.ID, 
+            "team_id", t.TeamId)
+
+        rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
+        rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
 
 		if err != nil {
 
