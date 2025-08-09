@@ -58,27 +58,12 @@ func (CM *CacheManager) GetUserByUUIDCache(ctx context.Context, db *database.Pos
 	return CM.GetUserByIdCache(ctx, db, userID.String())
 }
 
-func (CM *CacheManager) SetUserCache(user types.UserProfile, expiration time.Duration) {
-	CM.Set(UserProfile, user.Email, user, expiration)
-	CM.Set(UserProfile, user.ID.String(), user, expiration)
-}
-
-func (CM *CacheManager) DeleteUserCache(user types.UserProfile) {
-	CM.Delete(UserProfile, user.Email)
-	CM.Delete(UserProfile, user.ID.String())
-}
-
 func (CM *CacheManager) InvalidateUserCacheByEmail(email string) {
 	CM.Delete(UserProfile, email)
 }
 
 func (CM *CacheManager) InvalidateUserCacheByID(userID string) {
 	CM.Delete(UserProfile, userID)
-}
-
-func (CM *CacheManager) UpdateUserCache(user types.UserProfile, expiration time.Duration) {
-	CM.DeleteUserCache(user)
-	CM.SetUserCache(user, expiration)
 }
 
 func (CM *CacheManager) UpdateUserReadyStateCache(ctx context.Context, db *database.PostgresDriver, userEmail string, status bool) error {

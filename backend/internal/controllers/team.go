@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"labyrinth/internal/cache"
 	"labyrinth/internal/channel"
+	queue "labyrinth/internal/controllers/db_queue"
 	"labyrinth/internal/protocol"
 	"labyrinth/internal/router"
 	"labyrinth/internal/types"
-	"labyrinth/internal/controllers/db_queue"
 	"log/slog"
 	"net/http"
 	"time"
@@ -167,88 +167,99 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			return
 
 		}
-        profile, err := rtr.State.CM.GetUserByEmailCache(context.Background(), rtr.State.DB, userEmail)
-        if err != nil {
-            http.Error(w, "internal error occurred", http.StatusInternalServerError)
-            rtr.Logger.Error("failed to get user from cache", "error", err.Error())
-            return
-        }
-
-        team, err := rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, t.TeamId)
-        if err != nil {
-            http.Error(w, "team not found", http.StatusBadRequest)
-            rtr.Logger.Error("team not found in cache", "team_id", t.TeamId, "error", err)
-            return
-        }
-
-        rtr.Logger.Info("Join team request - updating cache immediately", 
-            "user_id", profile.ID, 
-            "team_id", t.TeamId)
-
-        rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
-        rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
-
+		profile, err := rtr.State.CM.GetUserByEmailCache(context.Background(), rtr.State.DB, userEmail)
 		if err != nil {
-
 			http.Error(w, "internal error occurred", http.StatusInternalServerError)
-			rtr.Logger.Error("internal error", "error", err.Error())
+			rtr.Logger.Error("failed to get user from cache", "error", err.Error())
 			return
-
 		}
 
+		team, err := rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, t.TeamId)
+		if err != nil {
+			http.Error(w, "team not found", http.StatusBadRequest)
+			rtr.Logger.Error("team not found in cache", "team_id", t.TeamId, "error", err)
+			return
+		}
+
+		rtr.Logger.Info("Join team request - optimistic cache update",
+			"user_id", profile.ID,
+			"team_id", t.TeamId)
+
+		updatedTeam := team
+		memberExists := false
+		for _, member := range team.Members {
+			if member.ID == profile.ID {
+				memberExists = true
+				break
+			}
+		}
+
+		if !memberExists {
+			newMember := types.TeamMember{
+				UserProfile: profile,
+				IsReady:     false,
+			}
+			updatedTeam.Members = append(updatedTeam.Members, newMember)
+			rtr.State.CM.Set(cache.Team, updatedTeam.ID, updatedTeam, 30*time.Minute)
+			rtr.State.CM.Set(cache.TeamUserIDIndex, profile.ID.String(), updatedTeam, 30*time.Minute)
+		}
+
+		rtr.State.CM.Set(cache.UserProfile, profile.Email, profile, 60*time.Minute)
+		rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
+
 		queueReq := queue.TeamQueueRequest{
-            Type:      "join",
-            UserID:    profile.ID,
-            TeamID:    t.TeamId,
-            UserEmail: userEmail,
-            Handler: func() error {
-                rtr.Logger.Info("Executing join team from queue", 
-                    "user_id", profile.ID, 
-                    "team_id", t.TeamId)
-                
-                err := rtr.State.DB.AddTeamMember(context.Background(), t.TeamId, profile.ID)
-                if err != nil {
-                    return fmt.Errorf("database error joining team: %w", err)
-                }
-                
-                team, err := rtr.State.DB.GetTeamByID(context.Background(), t.TeamId)
-                if err != nil {
-                    return fmt.Errorf("error fetching team after join: %w", err)
-                }
-                
-                rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
-                rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
-                
-                teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
-                if teamChannel != nil {
-                    teamChannel.Broadcast(protocol.Packet{
-                        Type: "BackgroundMessage", 
-                        BackgroundMessage: protocol.BackgroundMessage{
-                            Relay: fmt.Sprintf("teamId:%s -> %s joined the team", team.ID, profile.Email), 
-                            MsgContext: "team_join",
-                        },
-                    })
-                }
-                
-                rtr.Logger.Info("Join team completed successfully", 
-                    "user_id", profile.ID, 
-                    "team_id", t.TeamId)
-                
-                return nil
-            },
-        }
+			Type:      "join",
+			UserID:    profile.ID,
+			TeamID:    t.TeamId,
+			UserEmail: userEmail,
+			Handler: func() error {
+				rtr.Logger.Info("Executing join team from queue",
+					"user_id", profile.ID,
+					"team_id", t.TeamId)
+
+				err := rtr.State.DB.AddTeamMember(context.Background(), t.TeamId, profile.ID)
+				if err != nil {
+					return fmt.Errorf("database error joining team: %w", err)
+				}
+
+				team, err := rtr.State.DB.GetTeamByID(context.Background(), t.TeamId)
+				if err != nil {
+					return fmt.Errorf("error fetching team after join: %w", err)
+				}
+
+				rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
+				rtr.State.CM.Set(cache.UserProfile, profile.ID.String(), profile, 60*time.Minute)
+
+				teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
+				if teamChannel != nil {
+					teamChannel.Broadcast(protocol.Packet{
+						Type: "BackgroundMessage",
+						BackgroundMessage: protocol.BackgroundMessage{
+							Relay:      fmt.Sprintf("teamId:%s -> %s joined the team", team.ID, profile.Email),
+							MsgContext: "team_join",
+						},
+					})
+				}
+
+				rtr.Logger.Info("Join team completed successfully",
+					"user_id", profile.ID,
+					"team_id", t.TeamId)
+
+				return nil
+			},
+		}
 		queue.AddToQueue(queueReq)
 
-		// payload, _ := json.Marshal(team)
+		payload, _ := json.Marshal(updatedTeam)
 
-		rtr.Logger.Info("Join team request queued successfully", 
-            "user_id", profile.ID, 
-            "team_id", t.TeamId)
+		rtr.Logger.Info("Join team request queued successfully",
+			"user_id", profile.ID,
+			"team_id", t.TeamId)
 
 		apiResponse := types.ApiResponse{
 			Success: true,
 			Message: "Member added to team successfully!",
-			Payload: nil , //was originally sending back payload, team as JSON.. have to check if this is used in frontend
+			Payload: payload,
 		}
 
 		if err := json.NewEncoder(w).Encode(apiResponse); err != nil {
@@ -379,16 +390,16 @@ func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
 		}
 
 		queueReq := queue.TeamQueueRequest{
-            Type:      "leave",
-            UserID:    user.ID,
-            TeamID:    team.ID,
-            UserEmail: userEmail,
-            Handler: func() error {
-                return rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
-            },
-        }
+			Type:      "leave",
+			UserID:    user.ID,
+			TeamID:    team.ID,
+			UserEmail: userEmail,
+			Handler: func() error {
+				return rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
+			},
+		}
 
-        queue.AddToQueue(queueReq)
+		queue.AddToQueue(queueReq)
 
 		//sending instant response beforing getting response back from DB so we dont crash the db yay
 		apiResponse := types.ApiResponse{
