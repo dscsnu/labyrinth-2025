@@ -39,88 +39,95 @@ func TeamCreationHandler(rtr *router.Router) http.HandlerFunc {
 		}{}
 
 		if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-
-			//http.Error(w, "error reading teamName field, invalid json payload", http.StatusBadRequest)
-			//w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
 			apiResponse := types.ApiResponse{
 				Success: false,
 				Message: "invalid json payload",
 				Payload: nil,
 			}
-			//json.NewEncoder(w).Encode(map[string]string{
-			//	"error": "error reading tean_name field, invalid json payload",
-			//})
 			json.NewEncoder(w).Encode(apiResponse)
 			return
-
 		}
 
-		profile, err := rtr.State.DB.GetUser(context.Background(), userEmail)
+		profile, err := rtr.State.CM.GetUserByEmailCache(context.Background(), rtr.State.DB, userEmail)
 		if err != nil {
-
-			//http.Error(w, "internal error occurred", http.StatusInternalServerError)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal error", "error ", err.Error())
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "failed to get user profile",
+				Payload: nil,
+			}
+			json.NewEncoder(w).Encode(apiResponse)
+			rtr.Logger.Error("failed to get user from cache", "error", err.Error())
 			return
-
 		}
 
 		teamId, err := rtr.State.DB.CreateTeam(context.Background(), t.TeamName, profile.ID)
 		if err != nil {
-			//http.Error(w, "error creating team in database", http.StatusInternalServerError)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal error creating team", "error", err.Error())
+			apiResponse := types.ApiResponse{
+				Success: false,
+				Message: "failed to create team",
+				Payload: nil,
+			}
+			json.NewEncoder(w).Encode(apiResponse)
+			rtr.Logger.Error("database error creating team", "error", err.Error())
 			return
 		}
 
-		err = rtr.State.DB.AssignLevelsToTeam(context.Background(), teamId)
-		if err != nil {
-			//http.Error(w, "error assigning levels to team", http.StatusInternalServerError)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal error assigning levels", "error", err.Error())
-			return
+		team := types.Team{
+			ID:   teamId,
+			Name: t.TeamName,
+			Members: []types.TeamMember{
+				{
+					UserProfile: profile,
+					IsReady:     false,
+				},
+			},
 		}
 
-		user, err := rtr.State.DB.GetUser(context.Background(), userEmail)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal error fetching user from db", "error", err)
-		}
-		rtr.State.CM.Set(cache.UserProfile, user.ID.String(), user, 60*time.Minute)
-
-		team, err := rtr.State.DB.GetTeamByID(context.Background(), teamId)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "internal server error",
-			})
-			rtr.Logger.Error("internal error fetching db at DB create", "error", err)
-		}
-
-		rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
+		rtr.State.CM.Set(cache.Team, teamId, team, 30*time.Minute)
+		rtr.State.CM.Set(cache.TeamUserIDIndex, profile.ID.String(), team, 30*time.Minute)
 
 		teamChannel := channel.NewChannel()
 		rtr.State.ChanPool.AddChannel(teamId, teamChannel)
-
 		go teamChannel.Start()
 
-		payload, _ := json.Marshal(map[string]string{"team_id": teamId})
+		queueReq := queue.TeamQueueRequest{
+			Type:      "assign_levels",
+			UserID:    profile.ID,
+			TeamID:    teamId,
+			TeamName:  t.TeamName,
+			UserEmail: userEmail,
+			Handler: func() error {
+				rtr.Logger.Info("Executing assign levels from queue",
+					"user_id", profile.ID,
+					"team_id", teamId)
+
+				err := rtr.State.DB.AssignLevelsToTeam(context.Background(), teamId)
+				if err != nil {
+					rtr.Logger.Error("database error assigning levels", "team_id", teamId, "error", err)
+					return fmt.Errorf("database error assigning levels: %w", err)
+				}
+
+				rtr.Logger.Info("Assign levels completed successfully",
+					"user_id", profile.ID,
+					"team_id", teamId)
+
+				return nil
+			},
+		}
+		queue.AddToQueue(queueReq)
+
+		payload, _ := json.Marshal(team)
+
+		rtr.Logger.Info("Team created successfully, levels assignment queued",
+			"user_id", profile.ID,
+			"team_id", teamId)
 
 		apiResponse := types.ApiResponse{
 			Success: true,
-			Message: "success",
+			Message: "Team created successfully!",
 			Payload: payload,
 		}
 
