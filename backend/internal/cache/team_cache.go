@@ -64,3 +64,23 @@ func (CM *CacheManager) GetTeamByIdCache(ctx context.Context, db *database.Postg
 	return team, nil
 
 }
+
+func (CM *CacheManager) AddMemberToTeamCache(teamId string, member types.TeamMember) error {
+	cached, exists := CM.Get(Team, teamId)
+	if !exists {
+		return nil
+	}
+	team, ok := cached.(types.Team)
+	if !ok {
+		return nil
+	}
+
+	for _, m := range team.Members {
+		if m.ID == member.ID {
+			return nil
+		}
+	}
+	team.Members = append(team.Members, member)
+	CM.Set(Team, teamId, team, 30*time.Minute)
+	return nil
+}
