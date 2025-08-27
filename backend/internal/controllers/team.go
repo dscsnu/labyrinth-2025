@@ -183,7 +183,7 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			return
 		}
 
-		team, err := rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, t.TeamId)
+		_, err = rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, t.TeamId)
 		if err != nil {
 			http.Error(w, "team not found", http.StatusBadRequest)
 			rtr.Logger.Error("team not found in cache", "team_id", t.TeamId, "error", err)
@@ -194,24 +194,13 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 			"user_id", profile.ID,
 			"team_id", t.TeamId)
 
-		updatedTeam := team
-		memberExists := false
-		for _, member := range team.Members {
-			if member.ID == profile.ID {
-				memberExists = true
-				break
-			}
+		// Add member to cache instantly
+		newMember := types.TeamMember{
+			UserProfile: profile,
+			IsReady:     false,
 		}
-
-		if !memberExists {
-			newMember := types.TeamMember{
-				UserProfile: profile,
-				IsReady:     false,
-			}
-			updatedTeam.Members = append(updatedTeam.Members, newMember)
-			rtr.State.CM.Set(cache.Team, updatedTeam.ID, updatedTeam, 30*time.Minute)
-			rtr.State.CM.Set(cache.TeamUserIDIndex, profile.ID.String(), updatedTeam, 30*time.Minute)
-		}
+		_ = rtr.State.CM.AddMemberToTeamCache(t.TeamId, newMember)
+		updatedTeam, _ := rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, t.TeamId)
 
 		queueReq := queue.DBQueueRequest{
 			Type: "join",
@@ -320,7 +309,7 @@ func GetTeamHandler(rtr *router.Router) http.HandlerFunc {
 		var err error
 
 		if teamId != "" {
-			//team, err = rtr.State.DB.GetTeamByID(context.Background(), teamId)
+			// fallback to db handled in cache manager
 			team, err = rtr.State.CM.GetTeamByIdCache(context.Background(), rtr.State.DB, teamId)
 		} else if userId != "" {
 			team, err = rtr.State.CM.GetTeamByUserIdCache(context.Background(), rtr.State.DB, userId)
@@ -414,6 +403,7 @@ func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
 			}
 		}
 
+		// Update cache instantly, outside queue
 		rtr.State.CM.Set(cache.Team, updatedTeam.ID, updatedTeam, 30*time.Minute)
 		for _, member := range updatedTeam.Members {
 			rtr.State.CM.Set(cache.TeamUserIDIndex, member.ID.String(), updatedTeam, 30*time.Minute)
@@ -434,19 +424,7 @@ func LeaveTeamHandler(rtr *router.Router) http.HandlerFunc {
 
 				err := rtr.State.DB.LeaveTeamMember(context.Background(), team.ID, user.ID)
 				if err != nil {
-					rtr.State.CM.Delete(cache.Team, team.ID)
-					rtr.State.CM.Delete(cache.TeamUserIDIndex, user.ID.String())
 					return fmt.Errorf("database error leaving team: %w", err)
-				}
-
-				finalTeam, err := rtr.State.DB.GetTeamByID(context.Background(), team.ID)
-				if err != nil {
-					rtr.Logger.Error("error fetching team after leave", "error", err)
-				} else {
-					rtr.State.CM.Set(cache.Team, finalTeam.ID, finalTeam, 30*time.Minute)
-					for _, member := range finalTeam.Members {
-						rtr.State.CM.Set(cache.TeamUserIDIndex, member.ID.String(), finalTeam, 30*time.Minute)
-					}
 				}
 
 				teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
