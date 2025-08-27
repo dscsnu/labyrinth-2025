@@ -224,7 +224,7 @@ func TeamUpdateHandler(rtr *router.Router) http.HandlerFunc {
 					return fmt.Errorf("error fetching team after join: %w", err)
 				}
 
-				rtr.State.CM.Set(cache.Team, team.ID, team, 30*time.Minute)
+				rtr.State.CM.Set(cache.Team, team.ID, team, 300*time.Minute) //just in case ..?
 
 				teamChannel := rtr.State.ChanPool.GetChannel(team.ID)
 				if teamChannel != nil {
